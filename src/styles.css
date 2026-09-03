@@ -74,6 +74,7 @@
   --signal: oklch(0.6 0.23 27);
   --signal-soft: oklch(0.6 0.23 27 / 12%);
   --cream: oklch(0.975 0.008 60);
+  --surface-light: oklch(1 0 0);
   --cream-foreground: oklch(0.18 0.01 40);
   --cream-muted: oklch(0.55 0.02 50);
 

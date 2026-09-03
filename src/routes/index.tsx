@@ -406,10 +406,10 @@ function ContactCard({ contact }: { contact: ContactRow }) {
     "flex items-center gap-4 rounded-2xl bg-background/0 px-5 py-4 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.45)] ring-1 ring-black/5 transition-transform duration-200 hover:-translate-y-0.5";
 
   return contact.url ? (
-    <a href={contact.url} target="_blank" rel="noreferrer" className={`${cls} bg-white`}>
+    <a href={contact.url} target="_blank" rel="noreferrer" className={`${cls} bg-surface-light`}>
       {inner}
     </a>
   ) : (
-    <div className={`${cls} bg-white`}>{inner}</div>
+    <div className={`${cls} bg-surface-light`}>{inner}</div>
   );
 }
