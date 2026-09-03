@@ -142,6 +142,15 @@ const FALLBACK_CONTACTS: ContactRow[] = [
     copyable: false,
     sort_order: 2,
   },
+  {
+    id: "c3",
+    label: "E-MAIL",
+    handle: "oleeo0.contato@gmail.com",
+    url: "mailto:oleeo0.contato@gmail.com",
+    icon: "mail",
+    copyable: true,
+    sort_order: 3,
+  },
 ];
 
 function ContactIcon({ icon }: { icon: string }) {
