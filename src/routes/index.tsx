@@ -402,13 +402,13 @@ function ContactCard({ contact }: { contact: ContactRow }) {
   );
 
   const cls =
-    "flex items-center gap-4 rounded-2xl bg-background/0 px-5 py-4 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.45)] ring-1 ring-black/5 transition-transform duration-200 hover:-translate-y-0.5";
+    "flex items-center gap-4 rounded-xl border border-border/60 bg-card px-5 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-signal/60";
 
   return contact.url ? (
-    <a href={contact.url} target="_blank" rel="noreferrer" className={`${cls} bg-surface-light`}>
+    <a href={contact.url} target="_blank" rel="noreferrer" className={cls}>
       {inner}
     </a>
   ) : (
-    <div className={`${cls} bg-surface-light`}>{inner}</div>
+    <div className={cls}>{inner}</div>
   );
 }
