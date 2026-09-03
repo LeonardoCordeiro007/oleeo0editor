@@ -277,9 +277,10 @@ function Portfolio() {
       </main>
 
       {/* CONTATOS */}
-      <section className="mt-10 bg-cream px-6 py-20 text-cream-foreground">
+      <section className="mt-10 border-t border-border/60 px-6 py-20">
         <div className="mx-auto max-w-[1000px]">
-          <h2 className="text-center font-display text-5xl tracking-tight md:text-6xl">
+          <p className="mono-label text-center">(C) CONTATO</p>
+          <h2 className="display-title mt-4 text-center text-5xl tracking-tight md:text-6xl">
             {content["contact_title"]}
             <span className="text-signal">.</span>
           </h2>
@@ -381,9 +382,7 @@ function ContactCard({ contact }: { contact: ContactRow }) {
         <ContactIcon icon={contact.icon} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-mono text-[0.68rem] tracking-[0.22em] text-cream-muted">
-          {contact.label}
-        </span>
+        <span className="mono-label block">{contact.label}</span>
         <span className="block truncate text-lg font-semibold">{contact.handle}</span>
       </span>
       {contact.copyable && (
