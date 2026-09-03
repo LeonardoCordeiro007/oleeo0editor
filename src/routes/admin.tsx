@@ -219,7 +219,10 @@ function VideosEditor() {
       title: "Novo vídeo",
       sort_order: videos.filter((v) => v.format === format).length + 1,
     });
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Vídeo adicionado.");
     invalidate();
   };
@@ -268,14 +271,20 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
       })
       .eq("id", video.id);
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Vídeo salvo.");
     onChanged();
   };
 
   const remove = async () => {
     const { error } = await supabase.from("videos").delete().eq("id", video.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Vídeo removido.");
     onChanged();
   };
@@ -345,7 +354,10 @@ function ContentEditor() {
     const rows = CONTENT_FIELDS.map((f) => ({ key: f.key, value: draft[f.key] ?? "" }));
     const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
     setSaving(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Textos salvos.");
     invalidate();
   };
@@ -380,7 +392,10 @@ function ContactsEditor() {
     const { error } = await supabase
       .from("contacts")
       .insert({ label: "NOVO", handle: "@usuario", sort_order: contacts.length + 1 });
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     invalidate();
   };
 
@@ -414,14 +429,20 @@ function ContactForm({ contact, onChanged }: { contact: ContactRow; onChanged: (
         sort_order: draft.sort_order,
       })
       .eq("id", contact.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     toast.success("Contato salvo.");
     onChanged();
   };
 
   const remove = async () => {
     const { error } = await supabase.from("contacts").delete().eq("id", contact.id);
-    if (error) return toast.error(error.message);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
     onChanged();
   };
 
@@ -486,7 +507,7 @@ function Field({
   label: string;
   value: string;
   onChange: (v: string) => void;
-  multiline?: boolean;
+  multiline?: boolean | undefined;
 }) {
   return (
     <div className="space-y-2">
