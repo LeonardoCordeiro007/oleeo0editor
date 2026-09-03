@@ -142,6 +142,15 @@ const FALLBACK_CONTACTS: ContactRow[] = [
     copyable: false,
     sort_order: 2,
   },
+  {
+    id: "c3",
+    label: "E-MAIL",
+    handle: "oleeo0.contato@gmail.com",
+    url: "mailto:oleeo0.contato@gmail.com",
+    icon: "mail",
+    copyable: true,
+    sort_order: 3,
+  },
 ];
 
 function ContactIcon({ icon }: { icon: string }) {
@@ -277,9 +286,10 @@ function Portfolio() {
       </main>
 
       {/* CONTATOS */}
-      <section className="mt-10 bg-cream px-6 py-20 text-cream-foreground">
+      <section className="mt-10 border-t border-border/60 px-6 py-20">
         <div className="mx-auto max-w-[1000px]">
-          <h2 className="text-center font-display text-5xl tracking-tight md:text-6xl">
+          <p className="mono-label text-center">(C) CONTATO</p>
+          <h2 className="display-title mt-4 text-center text-5xl tracking-tight md:text-6xl">
             {content["contact_title"]}
             <span className="text-signal">.</span>
           </h2>
@@ -381,9 +391,7 @@ function ContactCard({ contact }: { contact: ContactRow }) {
         <ContactIcon icon={contact.icon} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block font-mono text-[0.68rem] tracking-[0.22em] text-cream-muted">
-          {contact.label}
-        </span>
+        <span className="mono-label block">{contact.label}</span>
         <span className="block truncate text-lg font-semibold">{contact.handle}</span>
       </span>
       {contact.copyable && (
@@ -403,13 +411,13 @@ function ContactCard({ contact }: { contact: ContactRow }) {
   );
 
   const cls =
-    "flex items-center gap-4 rounded-2xl bg-background/0 px-5 py-4 shadow-[0_10px_30px_-18px_rgba(0,0,0,0.45)] ring-1 ring-black/5 transition-transform duration-200 hover:-translate-y-0.5";
+    "flex items-center gap-4 rounded-xl border border-border/60 bg-card px-5 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-signal/60";
 
   return contact.url ? (
-    <a href={contact.url} target="_blank" rel="noreferrer" className={`${cls} bg-surface-light`}>
+    <a href={contact.url} target="_blank" rel="noreferrer" className={cls}>
       {inner}
     </a>
   ) : (
-    <div className={`${cls} bg-surface-light`}>{inner}</div>
+    <div className={cls}>{inner}</div>
   );
 }
