@@ -127,7 +127,7 @@ const FALLBACK_CONTACTS: ContactRow[] = [
   {
     id: "c1",
     label: "DISCORD",
-    handle: "@lipefilipi",
+    handle: "@o_leeo0",
     url: "",
     icon: "discord",
     copyable: true,
@@ -136,7 +136,7 @@ const FALLBACK_CONTACTS: ContactRow[] = [
   {
     id: "c2",
     label: "TWITTER / X",
-    handle: "@eusouluizf",
+    handle: "@Oleeo0_",
     url: "https://x.com/eusouluizf",
     icon: "twitter",
     copyable: false,
