@@ -297,9 +297,9 @@ function Portfolio() {
               {t(content, "hero_kicker", lang)}
             </p>
             <h1 className="display-title mt-5 text-[clamp(3.5rem,12vw,8rem)] text-foreground">
-              {t(content, "hero_title_1", lang)}
+              {highlightEditor(t(content, "hero_title_1", lang))}
               <br />
-              {t(content, "hero_title_2", lang)}
+              {highlightEditor(t(content, "hero_title_2", lang))}
             </h1>
             <p className="mt-6 max-w-md text-sm leading-relaxed text-muted-foreground">
               {t(content, "hero_text", lang)}
