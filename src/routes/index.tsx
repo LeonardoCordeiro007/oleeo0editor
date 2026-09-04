@@ -234,7 +234,7 @@ function Portfolio() {
             height={32}
             className="h-8 w-8 rounded-md object-cover ring-1 ring-signal/40"
           />
-          <span className="font-display text-lg tracking-wide">{t(content, "brand_name", lang)}</span>
+          <span className="font-display text-lg tracking-wide">{highlightEditor(t(content, "brand_name", lang))}</span>
           <span className="mono-label hidden sm:inline">{t(content, "brand_role", lang)}</span>
 
           <nav className="ml-auto flex items-center gap-1">
