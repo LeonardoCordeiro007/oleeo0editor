@@ -198,8 +198,12 @@ function Portfolio() {
   });
 
   const ui = UI_TEXT[lang];
-  const shorts = videos.filter((v) => v.format === "short");
-  const longs = videos.filter((v) => v.format === "long");
+  // Vídeos são separados por idioma; se um idioma ainda não tem vídeos, reaproveita os de PT.
+  const ptVideos = videos.filter((v) => (v.lang ?? "pt") !== "en");
+  const enVideos = videos.filter((v) => v.lang === "en");
+  const langVideos = lang === "en" && enVideos.length > 0 ? enVideos : ptVideos;
+  const shorts = langVideos.filter((v) => v.format === "short");
+  const longs = langVideos.filter((v) => v.format === "long");
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -235,13 +239,25 @@ function Portfolio() {
                 {item.label}
               </button>
             ))}
-            <button
-              type="button"
-              onClick={() => setLang(lang === "pt" ? "en" : "pt")}
-              className="ml-2 rounded-full border border-signal/50 px-3 py-1.5 font-mono text-xs tracking-widest text-signal transition-colors hover:bg-signal hover:text-background"
-            >
-              {lang === "pt" ? "PT" : "EN"}
-            </button>
+            <div className="relative ml-2 flex rounded-full border border-signal/50 p-0.5">
+              <span
+                aria-hidden
+                className="absolute inset-y-0.5 left-0.5 w-[calc(50%-2px)] rounded-full bg-signal transition-transform duration-300 ease-out"
+                style={{ transform: lang === "en" ? "translateX(100%)" : "translateX(0)" }}
+              />
+              {(["pt", "en"] as const).map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  onClick={() => setLang(l)}
+                  className={`relative z-10 rounded-full px-3 py-1 font-mono text-xs tracking-widest uppercase transition-colors duration-300 ${
+                    lang === l ? "text-background" : "text-signal hover:text-foreground"
+                  }`}
+                >
+                  {l}
+                </button>
+              ))}
+            </div>
           </nav>
         </div>
       </header>
