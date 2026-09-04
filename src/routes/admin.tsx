@@ -734,3 +734,95 @@ function Field({
     </div>
   );
 }
+
+function ImageField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      if (!value.startsWith(STORAGE_PREFIX)) {
+        setPreview(value);
+        return;
+      }
+      const { data } = await supabase.storage
+        .from("portfolio-videos")
+        .createSignedUrl(value.slice(STORAGE_PREFIX.length), 3600);
+      if (alive) setPreview(data?.signedUrl ?? "");
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [value]);
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    try {
+      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `site/${Date.now()}.${extension}`;
+      await uploadFile(path, file, file.type || "image/jpeg");
+      onChange(`${STORAGE_PREFIX}${path}`);
+      toast.success("Imagem enviada. Clique em salvar textos para publicar.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível enviar a imagem.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <Label>{label}</Label>
+      {preview && (
+        <img
+          src={preview}
+          alt={label}
+          className="max-h-48 w-auto rounded-md border border-border object-cover"
+        />
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void upload(file);
+        }}
+      />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {uploading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="mr-2 h-4 w-4" />
+          )}
+          {uploading ? "Enviando..." : "Enviar imagem"}
+        </Button>
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="ou cole uma URL"
+          className="max-w-sm"
+        />
+      </div>
+    </div>
+  );
+}
