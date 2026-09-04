@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AtSign,
   Check,
@@ -9,15 +9,20 @@ import {
   Mail,
   MessageCircle,
   Play,
+  X,
   Youtube,
 } from "lucide-react";
 
 import {
   DEFAULT_CONTENT,
+  ICON_URL,
+  UI_TEXT,
   fetchContacts,
   fetchContent,
   fetchVideos,
+  t,
   type ContactRow,
+  type Lang,
   type VideoRow,
 } from "@/lib/portfolio";
 
@@ -162,7 +167,20 @@ function ContactIcon({ icon }: { icon: string }) {
   return <AtSign className={cls} />;
 }
 
+function videoTitle(v: VideoRow, lang: Lang) {
+  return (lang === "en" && v.title_en?.trim()) || v.title;
+}
+function videoDescription(v: VideoRow, lang: Lang) {
+  return (lang === "en" && v.description_en?.trim()) || v.description;
+}
+function videoCategory(v: VideoRow, lang: Lang) {
+  return (lang === "en" && v.category_en?.trim()) || v.category;
+}
+
 function Portfolio() {
+  const [lang, setLang] = useState<Lang>("pt");
+  const [active, setActive] = useState<VideoRow | null>(null);
+
   const { data: content = DEFAULT_CONTENT } = useQuery({
     queryKey: ["content"],
     queryFn: fetchContent,
@@ -179,72 +197,100 @@ function Portfolio() {
     placeholderData: FALLBACK_CONTACTS,
   });
 
+  const ui = UI_TEXT[lang];
   const shorts = videos.filter((v) => v.format === "short");
   const longs = videos.filter((v) => v.format === "long");
+
+  const scrollTo = (id: string) => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-30 border-b border-border/60 bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-[1200px] items-center gap-3 px-6 py-4">
-          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-secondary font-display text-sm text-foreground">
-            O
-          </span>
-          <span className="font-display text-lg tracking-wide">{content["brand_name"]}</span>
-          <span className="mono-label hidden sm:inline">{content["brand_role"]}</span>
-          <span className="ml-auto mono-label flex items-center gap-2">
-            <span className="inline-block h-1.5 w-1.5 animate-pulse rounded-full bg-signal" />
-            REC
-          </span>
+        <div className="mx-auto flex max-w-[1200px] flex-wrap items-center gap-3 px-6 py-4">
+          <img
+            src={ICON_URL}
+            alt="Ícone do editor"
+            width={32}
+            height={32}
+            className="h-8 w-8 rounded-md object-cover ring-1 ring-signal/40"
+          />
+          <span className="font-display text-lg tracking-wide">{t(content, "brand_name", lang)}</span>
+          <span className="mono-label hidden sm:inline">{t(content, "brand_role", lang)}</span>
+
+          <nav className="ml-auto flex items-center gap-1">
+            {[
+              { id: "home", label: ui.home },
+              { id: "projetos", label: ui.projects },
+              { id: "about", label: ui.about },
+              { id: "contato", label: ui.contact },
+            ].map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => scrollTo(item.id)}
+                className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+              >
+                {item.label}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setLang(lang === "pt" ? "en" : "pt")}
+              className="ml-2 rounded-full border border-signal/50 px-3 py-1.5 font-mono text-xs tracking-widest text-signal transition-colors hover:bg-signal hover:text-background"
+            >
+              {lang === "pt" ? "PT" : "EN"}
+            </button>
+          </nav>
         </div>
       </header>
 
       <main className="mx-auto max-w-[1200px] px-6">
         {/* HERO */}
-        <section className="grid gap-10 py-16 md:grid-cols-[1.1fr_1fr] md:items-center md:py-24">
+        <section id="home" className="scroll-mt-24 grid gap-10 py-16 md:grid-cols-[1.1fr_1fr] md:items-center md:py-24">
           <div>
             <p className="mono-label flex items-center gap-2">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-signal" />
-              {content["hero_kicker"]}
+              {t(content, "hero_kicker", lang)}
             </p>
             <h1 className="display-title mt-5 text-[clamp(3.5rem,12vw,8rem)] text-foreground">
-              {content["hero_title_1"]}
+              {t(content, "hero_title_1", lang)}
               <br />
-              {content["hero_title_2"]}
+              {t(content, "hero_title_2", lang)}
             </h1>
             <p className="mt-6 max-w-md text-sm leading-relaxed text-muted-foreground">
-              {content["hero_text"]}
+              {t(content, "hero_text", lang)}
             </p>
           </div>
 
           <figure className="frame overflow-hidden p-3">
-            <div className="overflow-hidden rounded-xl">
+            <div className="glow-media overflow-hidden rounded-xl">
               <img
-                src={content["hero_image"]}
-                alt="Sessão de edição de vídeo"
+                src={t(content, "hero_image", lang)}
+                alt="Ícone do editor"
                 width={1280}
-                height={960}
-                className="aspect-4/3 w-full object-cover"
+                height={1280}
+                className="aspect-square w-full object-cover"
               />
             </div>
             <figcaption className="mono-label flex items-center justify-between px-1 pt-3">
-              <span>{content["hero_file"]}</span>
-              <span>{content["hero_timecode"]}</span>
+              <span>{t(content, "hero_file", lang)}</span>
+              <span>{t(content, "hero_timecode", lang)}</span>
             </figcaption>
           </figure>
         </section>
 
         {/* SHORT FORMAT */}
-        <section className="py-10">
+        <section id="projetos" className="scroll-mt-24 py-10">
           <div className="flex items-end justify-between gap-4">
-            <h2 className="display-title text-3xl md:text-4xl">
-              {content["short_title"]} <sup className="mono-label align-super">(a)</sup>
-            </h2>
-            <span className="mono-label">{content["short_meta"]}</span>
+            <h2 className="display-title text-3xl md:text-4xl">{t(content, "short_title", lang)}</h2>
+            <span className="mono-label">{t(content, "short_meta", lang)}</span>
           </div>
 
           <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
             {shorts.map((v) => (
-              <VideoCardVertical key={v.id} video={v} />
+              <VideoCardVertical key={v.id} video={v} lang={lang} onOpen={() => setActive(v)} />
             ))}
           </div>
         </section>
@@ -252,45 +298,49 @@ function Portfolio() {
         {/* LONG FORMAT */}
         <section className="py-16">
           <div className="flex items-end justify-between gap-4">
-            <h2 className="display-title text-3xl md:text-4xl">
-              {content["long_title"]} <sup className="mono-label align-super">(b)</sup>
-            </h2>
-            <span className="mono-label">{content["long_meta"]}</span>
+            <h2 className="display-title text-3xl md:text-4xl">{t(content, "long_title", lang)}</h2>
+            <span className="mono-label">{t(content, "long_meta", lang)}</span>
           </div>
 
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {longs.map((v) => (
-              <VideoCardWide key={v.id} video={v} />
+              <VideoCardWide key={v.id} video={v} lang={lang} onOpen={() => setActive(v)} />
             ))}
           </div>
         </section>
 
         {/* SOBRE */}
-        <section className="frame my-10 grid gap-10 p-8 md:grid-cols-2 md:items-center md:p-12">
+        <section
+          id="about"
+          className="frame my-10 scroll-mt-24 grid gap-10 p-8 md:grid-cols-2 md:items-center md:p-12"
+        >
           <div>
-            <p className="mono-label">{content["about_kicker"]}</p>
-            <h2 className="display-title mt-4 text-4xl md:text-5xl">{content["about_title"]}</h2>
+            <h2 className="display-title text-4xl md:text-5xl">
+              {t(content, "about_title", lang)}
+              <span className="text-signal">.</span>
+            </h2>
             <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
-              {content["about_text"]}
+              {t(content, "about_text", lang)}
             </p>
           </div>
-          <img
-            src={content["about_image"]}
-            alt="Retrato do editor"
-            loading="lazy"
-            width={832}
-            height={1024}
-            className="aspect-3/4 w-full rounded-xl object-cover"
-          />
+          <div className="glow-media overflow-hidden rounded-xl">
+            <img
+              src={t(content, "about_image", lang)}
+              alt="Retrato do editor"
+              loading="lazy"
+              width={832}
+              height={1024}
+              className="aspect-3/4 w-full object-cover"
+            />
+          </div>
         </section>
       </main>
 
       {/* CONTATOS */}
-      <section className="mt-10 border-t border-border/60 px-6 py-20">
+      <section id="contato" className="mt-10 scroll-mt-24 border-t border-border/60 px-6 py-20">
         <div className="mx-auto max-w-[1000px]">
-          <p className="mono-label text-center">(C) CONTATO</p>
-          <h2 className="display-title mt-4 text-center text-5xl tracking-tight md:text-6xl">
-            {content["contact_title"]}
+          <h2 className="display-title text-center text-5xl tracking-tight md:text-6xl">
+            {t(content, "contact_title", lang)}
             <span className="text-signal">.</span>
           </h2>
 
@@ -304,25 +354,149 @@ function Portfolio() {
 
       <footer className="border-t border-border/60">
         <div className="mono-label mx-auto flex max-w-[1200px] items-center justify-between px-6 py-6">
-          <span>{content["footer_text"]}</span>
+          <span>{t(content, "footer_text", lang)}</span>
           <span>REC ● 00:00:00:00</span>
         </div>
       </footer>
+
+      {active && (
+        <VideoModal
+          video={active}
+          lang={lang}
+          closeLabel={ui.close}
+          onClose={() => setActive(null)}
+        />
+      )}
     </div>
   );
 }
 
-function VideoCardVertical({ video }: { video: VideoRow }) {
+function embedUrl(url: string): string | null {
+  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{6,})/);
+  if (yt) return `https://www.youtube.com/embed/${yt[1]}`;
+  const vimeo = url.match(/vimeo\.com\/(\d+)/);
+  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
+  return null;
+}
+
+function VideoModal({
+  video,
+  lang,
+  closeLabel,
+  onClose,
+}: {
+  video: VideoRow;
+  lang: Lang;
+  closeLabel: string;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [onClose]);
+
+  const vertical = video.format === "short";
+  const embed = video.video_url ? embedUrl(video.video_url) : null;
+
   return (
-    <a
-      href={video.video_url || undefined}
-      target={video.video_url ? "_blank" : undefined}
-      rel="noreferrer"
-      className="group relative block overflow-hidden rounded-xl border border-border/60 bg-card"
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={videoTitle(video, lang)}
+      onClick={onClose}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/90 p-4 backdrop-blur-sm animate-fade-in"
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`frame relative w-full overflow-hidden p-3 animate-scale-in ${
+          vertical ? "max-w-[min(420px,92vw)]" : "max-w-4xl"
+        }`}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label={closeLabel}
+          className="absolute right-4 top-4 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-background/80 text-foreground transition-colors hover:bg-signal hover:text-background"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        <div
+          className={`overflow-hidden rounded-xl bg-black ${vertical ? "aspect-9/16 max-h-[80vh]" : "aspect-video"}`}
+        >
+          {embed ? (
+            <iframe
+              src={embed}
+              title={videoTitle(video, lang)}
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
+              allowFullScreen
+              className="h-full w-full"
+            />
+          ) : video.video_url ? (
+            <video
+              src={video.video_url}
+              poster={video.thumb_url || undefined}
+              controls
+              autoPlay
+              playsInline
+              controlsList="nodownload"
+              className="h-full w-full object-contain"
+              ref={(el) => {
+                if (el) el.volume = 0.6;
+              }}
+            />
+          ) : (
+            <img
+              src={video.thumb_url}
+              alt={videoTitle(video, lang)}
+              className="h-full w-full object-cover"
+            />
+          )}
+        </div>
+
+        <div className="px-1 pt-3">
+          <div className="mono-label flex items-center justify-between">
+            <span>{videoCategory(video, lang)}</span>
+            <span>{video.duration}</span>
+          </div>
+          <h3 className="mt-1 text-base font-semibold">{videoTitle(video, lang)}</h3>
+          {videoDescription(video, lang) && (
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              {videoDescription(video, lang)}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function VideoCardVertical({
+  video,
+  lang,
+  onOpen,
+}: {
+  video: VideoRow;
+  lang: Lang;
+  onOpen: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group relative block w-full overflow-hidden rounded-xl border border-border/60 bg-card text-left"
     >
       <img
         src={video.thumb_url}
-        alt={video.title}
+        alt={videoTitle(video, lang)}
         loading="lazy"
         width={640}
         height={1088}
@@ -333,24 +507,31 @@ function VideoCardVertical({ video }: { video: VideoRow }) {
         <Play className="h-5 w-5" />
       </span>
       <span className="mono-label absolute bottom-3 left-3 right-3 text-foreground">
-        {video.title} · {video.duration}
+        {videoTitle(video, lang)} · {video.duration}
       </span>
-    </a>
+    </button>
   );
 }
 
-function VideoCardWide({ video }: { video: VideoRow }) {
+function VideoCardWide({
+  video,
+  lang,
+  onOpen,
+}: {
+  video: VideoRow;
+  lang: Lang;
+  onOpen: () => void;
+}) {
   return (
-    <a
-      href={video.video_url || undefined}
-      target={video.video_url ? "_blank" : undefined}
-      rel="noreferrer"
-      className="group block overflow-hidden rounded-xl border border-border/60 bg-card"
+    <button
+      type="button"
+      onClick={onOpen}
+      className="group block w-full overflow-hidden rounded-xl border border-border/60 bg-card text-left"
     >
       <div className="relative overflow-hidden">
         <img
           src={video.thumb_url}
-          alt={video.title}
+          alt={videoTitle(video, lang)}
           loading="lazy"
           width={1280}
           height={720}
@@ -362,13 +543,15 @@ function VideoCardWide({ video }: { video: VideoRow }) {
       </div>
       <div className="p-4">
         <div className="mono-label flex items-center justify-between">
-          <span>{video.category}</span>
+          <span>{videoCategory(video, lang)}</span>
           <span>{video.duration}</span>
         </div>
-        <h3 className="mt-2 text-base font-semibold text-foreground">{video.title}</h3>
-        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">{video.description}</p>
+        <h3 className="mt-2 text-base font-semibold text-foreground">{videoTitle(video, lang)}</h3>
+        <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+          {videoDescription(video, lang)}
+        </p>
       </div>
-    </a>
+    </button>
   );
 }
 
