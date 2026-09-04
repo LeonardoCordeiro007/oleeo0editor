@@ -283,8 +283,8 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
     setUploading(true);
     setProgress(0);
     try {
-      if (file.size > 500 * 1024 * 1024) {
-        throw new Error("O arquivo passa de 500MB. Comprima o vídeo antes de enviar.");
+      if (file.size > 2 * 1024 * 1024 * 1024) {
+        throw new Error("O arquivo passa de 2GB. Comprima o vídeo antes de enviar.");
       }
       const thumbnail = await extractVideoThumbnail(file);
       const extension = file.name.split(".").pop()?.toLowerCase() || "mp4";
