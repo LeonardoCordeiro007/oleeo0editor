@@ -345,6 +345,11 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
       toast.error(error.message);
       return;
     }
+    if (video.video_path || video.thumb_path) {
+      await supabase.storage
+        .from("portfolio-videos")
+        .remove([video.video_path, video.thumb_path].filter((path): path is string => Boolean(path)));
+    }
     toast.success("Vídeo removido.");
     onChanged();
   };
