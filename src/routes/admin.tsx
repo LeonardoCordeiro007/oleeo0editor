@@ -586,12 +586,16 @@ function ContentEditor() {
       <div className="frame grid gap-4 p-5 md:grid-cols-2">
         {fields.map((f) =>
           IMAGE_FIELDS.has(f.key) ? (
-            <div key={f.key} className="md:col-span-2">
+            <div key={f.key} className="space-y-3 md:col-span-2">
               <ImageField
                 label={f.label}
                 value={draft[f.key] ?? ""}
                 onChange={(v) => setDraft({ ...draft, [f.key]: v })}
               />
+              <Button type="button" size="sm" onClick={saveImages} disabled={savingImages}>
+                {savingImages && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Salvar imagens
+              </Button>
             </div>
           ) : (
             <div key={keyFor(f.key)} className={f.multiline ? "md:col-span-2" : ""}>
