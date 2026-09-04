@@ -325,8 +325,8 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
         duration: draft.duration,
         thumb_url: draft.thumb_url,
         video_url: draft.video_url,
-        thumb_path: draft.thumb_path,
-        video_path: draft.video_path,
+        thumb_path: draft.thumb_path ?? null,
+        video_path: draft.video_path ?? null,
         sort_order: draft.sort_order,
       })
       .eq("id", video.id);
