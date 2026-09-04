@@ -9,8 +9,8 @@ export type VideoRow = {
   duration: string;
   thumb_url: string;
   video_url: string;
-  thumb_path: string | null;
-  video_path: string | null;
+  thumb_path?: string | null;
+  video_path?: string | null;
   sort_order: number;
 };
 
