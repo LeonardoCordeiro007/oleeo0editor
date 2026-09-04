@@ -197,3 +197,39 @@ export async function fetchRawContent(): Promise<ContentMap> {
   for (const row of data ?? []) map[row.key] = row.value;
   return map;
 }
+
+/** Enquadramento de uma imagem (posição do foco + zoom). */
+export type ImageFit = { x: number; y: number; scale: number };
+
+export const DEFAULT_FIT: ImageFit = { x: 50, y: 50, scale: 1 };
+
+/** Proporção do espaço onde cada imagem aparece na página. */
+export const IMAGE_ASPECT: Record<string, number> = {
+  hero_image: 1,
+  about_image: 3 / 4,
+};
+
+export const fitKey = (key: string) => `${key}_fit`;
+
+export function parseFit(value?: string): ImageFit {
+  if (!value) return DEFAULT_FIT;
+  try {
+    const parsed = JSON.parse(value) as Partial<ImageFit>;
+    return {
+      x: typeof parsed.x === "number" ? parsed.x : 50,
+      y: typeof parsed.y === "number" ? parsed.y : 50,
+      scale: typeof parsed.scale === "number" ? parsed.scale : 1,
+    };
+  } catch {
+    return DEFAULT_FIT;
+  }
+}
+
+/** Estilo aplicado à <img> para respeitar o enquadramento escolhido no painel. */
+export function fitStyle(content: ContentMap, key: string) {
+  const fit = parseFit(content[fitKey(key)]);
+  return {
+    objectPosition: `${fit.x}% ${fit.y}%`,
+    transform: fit.scale === 1 ? undefined : `scale(${fit.scale})`,
+  };
+}
