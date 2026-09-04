@@ -314,7 +314,6 @@ function Portfolio() {
                 width={1280}
                 height={1280}
                 className="aspect-square w-full object-cover"
-                style={fitStyle(content, "hero_image")}
               />
             </div>
             <figcaption className="mono-label flex items-center justify-between px-1 pt-3">
@@ -374,7 +373,6 @@ function Portfolio() {
               width={832}
               height={1024}
               className="aspect-3/4 w-full object-cover"
-              style={fitStyle(content, "about_image")}
             />
           </div>
         </section>
