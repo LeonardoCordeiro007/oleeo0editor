@@ -1,10 +1,8 @@
 import { supabase } from "@/integrations/supabase/client";
-import iconAsset from "@/assets/icon.jpg.asset.json";
 
-export const ICON_URL = iconAsset.url;
+export const ICON_URL = "/rudeus.jpg";
 
 export type Lang = "pt" | "en";
-
 export type VideoRow = {
   id: string;
   format: string;
@@ -23,7 +21,6 @@ export type VideoRow = {
   lang?: string;
 };
 
-
 export type ContactRow = {
   id: string;
   label: string;
@@ -33,9 +30,7 @@ export type ContactRow = {
   copyable: boolean;
   sort_order: number;
 };
-
 export type ContentMap = Record<string, string>;
-
 export const DEFAULT_CONTENT: ContentMap = {
   brand_name: "OLEEO0 EDITOR",
   brand_role: "EDITOR DE VÍDEO",
@@ -46,7 +41,8 @@ export const DEFAULT_CONTENT: ContentMap = {
     "Edição de vídeo com ritmo, cor e intenção. Do storyboard à colorização, cada frame recebe o cuidado que merece.",
   hero_file: "REEL_2026.MP4",
   hero_timecode: "\n",
-  hero_image: ICON_URL,
+  // Sem imagem de fallback: evita mostrar uma imagem errada antes do conteúdo do Supabase carregar.
+  hero_image: "",
   short_title: "Short format",
   short_meta: "9:16 / VERTICAL",
   long_title: "Long format",
@@ -58,7 +54,6 @@ export const DEFAULT_CONTENT: ContentMap = {
   contact_title: "contact",
   footer_text: "OLEEO0 EDITOR — EDIÇÃO",
 };
-
 export const DEFAULT_CONTENT_EN: ContentMap = {
   brand_name: "OLEEO0 EDITOR",
   brand_role: "VIDEO EDITOR",
@@ -69,7 +64,7 @@ export const DEFAULT_CONTENT_EN: ContentMap = {
     "Video editing with rhythm, color and intention. From storyboard to color grading, every frame gets the care it deserves.",
   hero_file: "REEL_2026.MP4",
   hero_timecode: "\n",
-  hero_image: ICON_URL,
+  hero_image: "",
   short_title: "Short format",
   short_meta: "9:16 / VERTICAL",
   long_title: "Long format",
@@ -81,7 +76,6 @@ export const DEFAULT_CONTENT_EN: ContentMap = {
   contact_title: "contact",
   footer_text: "OLEEO0 EDITOR — EDITING",
 };
-
 /** Lê um texto respeitando o idioma: em inglês usa a chave `<key>_en` quando preenchida. */
 export function t(content: ContentMap, key: string, lang: Lang): string {
   if (lang === "en") {
@@ -93,12 +87,10 @@ export function t(content: ContentMap, key: string, lang: Lang): string {
   }
   return content[key] ?? DEFAULT_CONTENT[key] ?? "";
 }
-
 export const UI_TEXT = {
   pt: { home: "Home", projects: "Projetos", about: "Sobre", contact: "Contato", close: "Fechar" },
   en: { home: "Home", projects: "Projects", about: "About", contact: "Contact", close: "Close" },
 } as const;
-
 export const CONTENT_FIELDS: { key: string; label: string; multiline?: boolean }[] = [
   { key: "brand_name", label: "Nome da marca (topo)" },
   { key: "brand_role", label: "Função (topo)" },
@@ -108,7 +100,7 @@ export const CONTENT_FIELDS: { key: string; label: string; multiline?: boolean }
   { key: "hero_text", label: "Texto de apresentação", multiline: true },
   { key: "hero_file", label: "Nome do arquivo (reel)" },
   { key: "hero_timecode", label: "Timecode do reel" },
-  { key: "hero_image", label: "Imagem/ícone do topo (URL)" },
+  { key: "hero_image", label: "Imagem principal do topo (URL)" },
   { key: "short_title", label: "Título da seção vertical" },
   { key: "short_meta", label: "Etiqueta da seção vertical" },
   { key: "long_title", label: "Título da seção horizontal" },
@@ -119,21 +111,17 @@ export const CONTENT_FIELDS: { key: string; label: string; multiline?: boolean }
   { key: "contact_title", label: "Título dos contatos" },
   { key: "footer_text", label: "Texto do rodapé" },
 ];
-
 /** Campos que não são traduzíveis (imagens, timecode). */
 export const NON_TRANSLATABLE = new Set(["hero_image", "about_image", "hero_timecode"]);
 
-
 /** Prefixo usado quando a imagem foi enviada para o armazenamento do projeto. */
 export const STORAGE_PREFIX = "storage:";
-
 async function resolveImage(value: string): Promise<string> {
   if (!value.startsWith(STORAGE_PREFIX)) return value;
   const path = value.slice(STORAGE_PREFIX.length);
   const { data } = await supabase.storage.from("portfolio-videos").createSignedUrl(path, 3600);
   return data?.signedUrl ?? "";
 }
-
 export async function fetchContent(): Promise<ContentMap> {
   const { data, error } = await supabase.from("site_content").select("key, value");
   if (error) throw error;
@@ -148,7 +136,6 @@ export async function fetchContent(): Promise<ContentMap> {
   );
   return map;
 }
-
 
 export async function fetchVideos(): Promise<VideoRow[]> {
   const { data, error } = await supabase
@@ -167,7 +154,6 @@ export async function fetchVideos(): Promise<VideoRow[]> {
           ? supabase.storage.from("portfolio-videos").createSignedUrl(video.thumb_path, 3600)
           : Promise.resolve({ data: null, error: null }),
       ]);
-
       return {
         ...video,
         video_url: videoResult.data?.signedUrl ?? video.video_url,
@@ -185,7 +171,6 @@ export async function fetchContacts(): Promise<ContactRow[]> {
   if (error) throw error;
   return (data ?? []) as ContactRow[];
 }
-
 /** Campos de conteúdo que são imagens. */
 export const IMAGE_FIELDS = new Set(["hero_image", "about_image"]);
 
