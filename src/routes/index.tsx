@@ -178,8 +178,22 @@ function videoCategory(v: VideoRow, lang: Lang) {
 }
 
 function Portfolio() {
-  const [lang, setLang] = useState<Lang>("pt");
+  const [lang, setLangState] = useState<Lang>("pt");
   const [active, setActive] = useState<VideoRow | null>(null);
+
+  // Restaura o idioma salvo após a hidratação.
+  useEffect(() => {
+    const saved = window.localStorage.getItem("portfolio-lang");
+    if (saved === "en" || saved === "pt") setLangState(saved);
+  }, []);
+
+  // Trocar de idioma "recarrega" a página: volta ao topo e refaz as animações de entrada.
+  const setLang = (next: Lang) => {
+    if (next === lang) return;
+    window.localStorage.setItem("portfolio-lang", next);
+    window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+    setLangState(next);
+  };
 
   const { data: content = DEFAULT_CONTENT } = useQuery({
     queryKey: ["content"],
