@@ -777,11 +777,18 @@ function ImageField({
   label,
   value,
   onChange,
+  aspect = 1,
+  fit,
+  onFitChange,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
+  aspect?: number;
+  fit: ImageFit;
+  onFitChange: (fit: ImageFit) => void;
 }) {
+
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState("");
