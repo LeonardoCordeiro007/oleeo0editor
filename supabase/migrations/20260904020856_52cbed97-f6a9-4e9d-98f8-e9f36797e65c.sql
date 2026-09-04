@@ -1,0 +1,4 @@
+ALTER TABLE public.videos
+  ADD COLUMN IF NOT EXISTS title_en text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS description_en text NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS category_en text NOT NULL DEFAULT '';

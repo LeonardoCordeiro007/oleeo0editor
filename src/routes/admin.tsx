@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   CONTENT_FIELDS,
   DEFAULT_CONTENT,
+  NON_TRANSLATABLE,
+
   fetchContacts,
   fetchContent,
   fetchVideos,
@@ -322,6 +324,9 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
         title: draft.title,
         description: draft.description,
         category: draft.category,
+        title_en: draft.title_en ?? "",
+        description_en: draft.description_en ?? "",
+        category_en: draft.category_en ?? "",
         duration: draft.duration,
         thumb_url: draft.thumb_url,
         video_url: draft.video_url,
@@ -338,6 +343,7 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
     toast.success("Vídeo salvo.");
     onChanged();
   };
+
 
   const remove = async () => {
     const { error } = await supabase.from("videos").delete().eq("id", video.id);
@@ -410,6 +416,18 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
             className="aspect-video w-full max-w-xs rounded-md border border-border object-cover"
           />
         )}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field
+            label="Ou link do vídeo (YouTube, Vimeo, MP4)"
+            value={draft.video_url}
+            onChange={(v) => setDraft({ ...draft, video_url: v, video_path: null })}
+          />
+          <Field
+            label="Capa por URL (opcional)"
+            value={draft.thumb_url}
+            onChange={(v) => setDraft({ ...draft, thumb_url: v, thumb_path: null })}
+          />
+        </div>
       </div>
       <div className="md:col-span-2">
         <Field
@@ -419,6 +437,28 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
           onChange={(v) => setDraft({ ...draft, description: v })}
         />
       </div>
+      <div className="space-y-4 rounded-lg border border-border/60 p-4 md:col-span-2">
+        <p className="mono-label">Versão em inglês</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field
+            label="Title (EN)"
+            value={draft.title_en ?? ""}
+            onChange={(v) => setDraft({ ...draft, title_en: v })}
+          />
+          <Field
+            label="Category (EN)"
+            value={draft.category_en ?? ""}
+            onChange={(v) => setDraft({ ...draft, category_en: v })}
+          />
+        </div>
+        <Field
+          label="Description (EN)"
+          multiline
+          value={draft.description_en ?? ""}
+          onChange={(v) => setDraft({ ...draft, description_en: v })}
+        />
+      </div>
+
       <div className="flex gap-2 md:col-span-2">
         <Button size="sm" onClick={save} disabled={saving}>
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -486,13 +526,23 @@ function ContentEditor() {
     queryFn: fetchContent,
   });
   const [draft, setDraft] = useState<Record<string, string>>(content);
+  const [lang, setLang] = useState<"pt" | "en">("pt");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => setDraft(content), [content]);
 
+  const fields = CONTENT_FIELDS.filter((f) => lang === "pt" || !NON_TRANSLATABLE.has(f.key));
+  const keyFor = (key: string) => (lang === "en" ? `${key}_en` : key);
+
   const save = async () => {
     setSaving(true);
-    const rows = CONTENT_FIELDS.map((f) => ({ key: f.key, value: draft[f.key] ?? "" }));
+    const rows = CONTENT_FIELDS.flatMap((f) => {
+      const out = [{ key: f.key, value: draft[f.key] ?? "" }];
+      if (!NON_TRANSLATABLE.has(f.key)) {
+        out.push({ key: `${f.key}_en`, value: draft[`${f.key}_en`] ?? "" });
+      }
+      return out;
+    });
     const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
     setSaving(false);
     if (error) {
@@ -505,14 +555,34 @@ function ContentEditor() {
 
   return (
     <div className="space-y-5">
+      <div className="flex gap-2">
+        {(["pt", "en"] as const).map((l) => (
+          <button
+            key={l}
+            onClick={() => setLang(l)}
+            className={`rounded-full px-4 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors ${
+              lang === l
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-secondary-foreground hover:bg-accent"
+            }`}
+          >
+            {l === "pt" ? "Português" : "English"}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {lang === "pt"
+          ? "Textos exibidos quando o site está em português."
+          : "Deixe em branco para reaproveitar o texto em português."}
+      </p>
       <div className="frame grid gap-4 p-5 md:grid-cols-2">
-        {CONTENT_FIELDS.map((f) => (
-          <div key={f.key} className={f.multiline ? "md:col-span-2" : ""}>
+        {fields.map((f) => (
+          <div key={keyFor(f.key)} className={f.multiline ? "md:col-span-2" : ""}>
             <Field
               label={f.label}
               multiline={f.multiline}
-              value={draft[f.key] ?? ""}
-              onChange={(v) => setDraft({ ...draft, [f.key]: v })}
+              value={draft[keyFor(f.key)] ?? ""}
+              onChange={(v) => setDraft({ ...draft, [keyFor(f.key)]: v })}
             />
           </div>
         ))}
@@ -522,6 +592,7 @@ function ContentEditor() {
         Salvar textos
       </Button>
     </div>
+
   );
 }
 
