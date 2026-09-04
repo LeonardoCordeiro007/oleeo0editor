@@ -524,13 +524,23 @@ function ContentEditor() {
     queryFn: fetchContent,
   });
   const [draft, setDraft] = useState<Record<string, string>>(content);
+  const [lang, setLang] = useState<"pt" | "en">("pt");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => setDraft(content), [content]);
 
+  const fields = CONTENT_FIELDS.filter((f) => lang === "pt" || !NON_TRANSLATABLE.has(f.key));
+  const keyFor = (key: string) => (lang === "en" ? `${key}_en` : key);
+
   const save = async () => {
     setSaving(true);
-    const rows = CONTENT_FIELDS.map((f) => ({ key: f.key, value: draft[f.key] ?? "" }));
+    const rows = CONTENT_FIELDS.flatMap((f) => {
+      const out = [{ key: f.key, value: draft[f.key] ?? "" }];
+      if (!NON_TRANSLATABLE.has(f.key)) {
+        out.push({ key: `${f.key}_en`, value: draft[`${f.key}_en`] ?? "" });
+      }
+      return out;
+    });
     const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
     setSaving(false);
     if (error) {
@@ -543,14 +553,34 @@ function ContentEditor() {
 
   return (
     <div className="space-y-5">
+      <div className="flex gap-2">
+        {(["pt", "en"] as const).map((l) => (
+          <button
+            key={l}
+            onClick={() => setLang(l)}
+            className={`rounded-full px-4 py-1.5 font-mono text-xs uppercase tracking-widest transition-colors ${
+              lang === l
+                ? "bg-primary text-primary-foreground"
+                : "bg-secondary text-secondary-foreground hover:bg-accent"
+            }`}
+          >
+            {l === "pt" ? "Português" : "English"}
+          </button>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        {lang === "pt"
+          ? "Textos exibidos quando o site está em português."
+          : "Deixe em branco para reaproveitar o texto em português."}
+      </p>
       <div className="frame grid gap-4 p-5 md:grid-cols-2">
-        {CONTENT_FIELDS.map((f) => (
-          <div key={f.key} className={f.multiline ? "md:col-span-2" : ""}>
+        {fields.map((f) => (
+          <div key={keyFor(f.key)} className={f.multiline ? "md:col-span-2" : ""}>
             <Field
               label={f.label}
               multiline={f.multiline}
-              value={draft[f.key] ?? ""}
-              onChange={(v) => setDraft({ ...draft, [f.key]: v })}
+              value={draft[keyFor(f.key)] ?? ""}
+              onChange={(v) => setDraft({ ...draft, [keyFor(f.key)]: v })}
             />
           </div>
         ))}
@@ -560,6 +590,7 @@ function ContentEditor() {
         Salvar textos
       </Button>
     </div>
+
   );
 }
 
