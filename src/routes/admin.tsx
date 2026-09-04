@@ -599,8 +599,16 @@ function ContentEditor() {
               <ImageField
                 label={f.label}
                 value={draft[f.key] ?? ""}
-                onChange={(v) => setDraft({ ...draft, [f.key]: v })}
+                aspect={IMAGE_ASPECT[f.key] ?? 1}
+                fit={parseFit(draft[fitKey(f.key)])}
+                onFitChange={(fit) =>
+                  setDraft({ ...draft, [fitKey(f.key)]: JSON.stringify(fit) })
+                }
+                onChange={(v) =>
+                  setDraft({ ...draft, [f.key]: v, [fitKey(f.key)]: "" })
+                }
               />
+
               <Button type="button" size="sm" onClick={saveImages} disabled={savingImages}>
                 {savingImages && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Salvar imagens
