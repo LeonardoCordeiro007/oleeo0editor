@@ -555,7 +555,11 @@ function ContentEditor() {
   const [savingImages, setSavingImages] = useState(false);
   const saveImages = async () => {
     setSavingImages(true);
-    const rows = [...IMAGE_FIELDS].map((key) => ({ key, value: draft[key] ?? "" }));
+    const rows = [...IMAGE_FIELDS].flatMap((key) => [
+      { key, value: draft[key] ?? "" },
+      { key: fitKey(key), value: draft[fitKey(key)] ?? "" },
+    ]);
+
     const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
     setSavingImages(false);
     if (error) {
