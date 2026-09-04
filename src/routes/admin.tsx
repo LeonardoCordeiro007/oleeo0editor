@@ -415,7 +415,7 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
             ) : (
               <Upload className="mr-2 h-4 w-4" />
             )}
-            {uploading ? "Enviando..." : "Escolher vídeo"}
+            {uploading ? `Enviando... ${progress}%` : "Escolher vídeo"}
           </Button>
           <span className="text-xs text-muted-foreground">
             MP4, WebM ou MOV · a capa e a duração são geradas automaticamente
@@ -512,9 +512,10 @@ function extractVideoThumbnail(file: File): Promise<{ blob: Blob; duration: stri
 function ContentEditor() {
   const invalidate = useInvalidate();
   const { data: content = DEFAULT_CONTENT } = useQuery({
-    queryKey: ["content"],
-    queryFn: fetchContent,
+    queryKey: ["raw-content"],
+    queryFn: fetchRawContent,
   });
+
   const [draft, setDraft] = useState<Record<string, string>>(content);
   const [lang, setLang] = useState<"pt" | "en">("pt");
   const [saving, setSaving] = useState(false);
@@ -566,17 +567,28 @@ function ContentEditor() {
           : "Deixe em branco para reaproveitar o texto em português."}
       </p>
       <div className="frame grid gap-4 p-5 md:grid-cols-2">
-        {fields.map((f) => (
-          <div key={keyFor(f.key)} className={f.multiline ? "md:col-span-2" : ""}>
-            <Field
-              label={f.label}
-              multiline={f.multiline}
-              value={draft[keyFor(f.key)] ?? ""}
-              onChange={(v) => setDraft({ ...draft, [keyFor(f.key)]: v })}
-            />
-          </div>
-        ))}
+        {fields.map((f) =>
+          IMAGE_FIELDS.has(f.key) ? (
+            <div key={f.key} className="md:col-span-2">
+              <ImageField
+                label={f.label}
+                value={draft[f.key] ?? ""}
+                onChange={(v) => setDraft({ ...draft, [f.key]: v })}
+              />
+            </div>
+          ) : (
+            <div key={keyFor(f.key)} className={f.multiline ? "md:col-span-2" : ""}>
+              <Field
+                label={f.label}
+                multiline={f.multiline}
+                value={draft[keyFor(f.key)] ?? ""}
+                onChange={(v) => setDraft({ ...draft, [keyFor(f.key)]: v })}
+              />
+            </div>
+          ),
+        )}
       </div>
+
       <Button onClick={save} disabled={saving}>
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Salvar textos
