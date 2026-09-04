@@ -13,15 +13,20 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   CONTENT_FIELDS,
   DEFAULT_CONTENT,
+  IMAGE_ASPECT,
   IMAGE_FIELDS,
   NON_TRANSLATABLE,
   STORAGE_PREFIX,
   fetchContacts,
   fetchRawContent,
   fetchVideos,
+  fitKey,
+  parseFit,
   type ContactRow,
+  type ImageFit,
   type VideoRow,
 } from "@/lib/portfolio";
+
 import { uploadFile } from "@/lib/upload";
 
 
