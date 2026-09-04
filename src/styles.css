@@ -122,3 +122,65 @@
   background: var(--grain);
   box-shadow: var(--shadow-frame);
 }
+
+@utility glow-media {
+  position: relative;
+  transition: transform 500ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: media-float 6s ease-in-out infinite;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -12%;
+    z-index: -1;
+    border-radius: inherit;
+    background: radial-gradient(circle at 50% 50%, var(--signal) 0%, transparent 68%);
+    opacity: 0.18;
+    filter: blur(38px);
+    transition: opacity 500ms ease;
+    animation: media-glow 6s ease-in-out infinite;
+  }
+
+  &:hover {
+    transform: scale(1.035);
+  }
+
+  &:hover::before {
+    opacity: 0.42;
+  }
+}
+
+@keyframes media-float {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.015); }
+}
+
+@keyframes media-glow {
+  0%, 100% { opacity: 0.16; }
+  50% { opacity: 0.32; }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@utility animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+@utility animate-scale-in {
+  animation: scale-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .glow-media,
+  .glow-media::before {
+    animation: none;
+  }
+}
