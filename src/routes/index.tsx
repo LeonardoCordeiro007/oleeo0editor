@@ -177,6 +177,18 @@ function videoCategory(v: VideoRow, lang: Lang) {
   return (lang === "en" && v.category_en?.trim()) || v.category;
 }
 
+function highlightEditor(text: string) {
+  if (!text.includes("EDITOR")) return text;
+  const [before, after] = text.split("EDITOR");
+  return (
+    <>
+      {before}
+      <span className="text-signal">EDITOR</span>
+      {after}
+    </>
+  );
+}
+
 function Portfolio() {
   const [lang, setLangState] = useState<Lang>("pt");
   const [active, setActive] = useState<VideoRow | null>(null);
