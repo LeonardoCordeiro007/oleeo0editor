@@ -45,19 +45,56 @@ export const DEFAULT_CONTENT: ContentMap = {
     "Edição de vídeo com ritmo, cor e intenção. Do storyboard à colorização, cada frame recebe o cuidado que merece.",
   hero_file: "REEL_2026.MP4",
   hero_timecode: "-00:00:42",
-  hero_image: "/images/hero-reel.jpg",
+  hero_image: ICON_URL,
   short_title: "Short format",
   short_meta: "9:16 / VERTICAL",
   long_title: "Long format",
   long_meta: "16:9 / HORIZONTAL",
-  about_kicker: "(C) SOBRE",
-  about_title: "Por trás da timeline",
+  about_title: "Sobre mim",
   about_text:
     "Sou Oleeo0, editor e colorista. Trabalho com produtoras independentes e marcas que buscam uma linguagem própria. Menos excesso, mais intenção.",
   about_image: "/images/about-editor.jpg",
   contact_title: "contact",
   footer_text: "OLEEO0 EDITOR — EDIÇÃO",
 };
+
+export const DEFAULT_CONTENT_EN: ContentMap = {
+  brand_name: "OLEEO0 EDITOR",
+  brand_role: "VIDEO EDITOR",
+  hero_kicker: "PORTFOLIO 2026 / 32 PROJECTS",
+  hero_title_1: "OLEEO0",
+  hero_title_2: "EDITOR",
+  hero_text:
+    "Video editing with rhythm, color and intention. From storyboard to color grading, every frame gets the care it deserves.",
+  hero_file: "REEL_2026.MP4",
+  hero_timecode: "-00:00:42",
+  hero_image: ICON_URL,
+  short_title: "Short format",
+  short_meta: "9:16 / VERTICAL",
+  long_title: "Long format",
+  long_meta: "16:9 / HORIZONTAL",
+  about_title: "About me",
+  about_text:
+    "I'm Oleeo0, editor and colorist. I work with independent production companies and brands looking for a voice of their own. Less excess, more intention.",
+  about_image: "/images/about-editor.jpg",
+  contact_title: "contact",
+  footer_text: "OLEEO0 EDITOR — EDITING",
+};
+
+/** Lê um texto respeitando o idioma: em inglês usa a chave `<key>_en` quando preenchida. */
+export function t(content: ContentMap, key: string, lang: Lang): string {
+  if (lang === "en") {
+    const en = content[`${key}_en`];
+    if (en && en.trim()) return en;
+    return DEFAULT_CONTENT_EN[key] ?? content[key] ?? "";
+  }
+  return content[key] ?? DEFAULT_CONTENT[key] ?? "";
+}
+
+export const UI_TEXT = {
+  pt: { home: "Home", projects: "Projetos", about: "Sobre", contact: "Contato", close: "Fechar" },
+  en: { home: "Home", projects: "Projects", about: "About", contact: "Contact", close: "Close" },
+} as const;
 
 export const CONTENT_FIELDS: { key: string; label: string; multiline?: boolean }[] = [
   { key: "brand_name", label: "Nome da marca (topo)" },
@@ -68,18 +105,21 @@ export const CONTENT_FIELDS: { key: string; label: string; multiline?: boolean }
   { key: "hero_text", label: "Texto de apresentação", multiline: true },
   { key: "hero_file", label: "Nome do arquivo (reel)" },
   { key: "hero_timecode", label: "Timecode do reel" },
-  { key: "hero_image", label: "Imagem do reel (URL)" },
+  { key: "hero_image", label: "Imagem/ícone do topo (URL)" },
   { key: "short_title", label: "Título da seção vertical" },
   { key: "short_meta", label: "Etiqueta da seção vertical" },
   { key: "long_title", label: "Título da seção horizontal" },
   { key: "long_meta", label: "Etiqueta da seção horizontal" },
-  { key: "about_kicker", label: "Etiqueta do sobre" },
   { key: "about_title", label: "Título do sobre" },
   { key: "about_text", label: "Texto do sobre", multiline: true },
   { key: "about_image", label: "Foto do sobre (URL)" },
   { key: "contact_title", label: "Título dos contatos" },
   { key: "footer_text", label: "Texto do rodapé" },
 ];
+
+/** Campos que não são traduzíveis (imagens, timecode). */
+export const NON_TRANSLATABLE = new Set(["hero_image", "about_image", "hero_timecode"]);
+
 
 export async function fetchContent(): Promise<ContentMap> {
   const { data, error } = await supabase.from("site_content").select("key, value");
