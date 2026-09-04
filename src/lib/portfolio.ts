@@ -1,4 +1,9 @@
 import { supabase } from "@/integrations/supabase/client";
+import iconAsset from "@/assets/icon.jpg.asset.json";
+
+export const ICON_URL = iconAsset.url;
+
+export type Lang = "pt" | "en";
 
 export type VideoRow = {
   id: string;
@@ -6,6 +11,9 @@ export type VideoRow = {
   title: string;
   description: string;
   category: string;
+  title_en?: string;
+  description_en?: string;
+  category_en?: string;
   duration: string;
   thumb_url: string;
   video_url: string;
@@ -13,6 +21,7 @@ export type VideoRow = {
   video_path?: string | null;
   sort_order: number;
 };
+
 
 export type ContactRow = {
   id: string;
