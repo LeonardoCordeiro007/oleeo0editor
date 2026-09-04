@@ -122,13 +122,31 @@ export const CONTENT_FIELDS: { key: string; label: string; multiline?: boolean }
 export const NON_TRANSLATABLE = new Set(["hero_image", "about_image", "hero_timecode"]);
 
 
+/** Prefixo usado quando a imagem foi enviada para o armazenamento do projeto. */
+export const STORAGE_PREFIX = "storage:";
+
+async function resolveImage(value: string): Promise<string> {
+  if (!value.startsWith(STORAGE_PREFIX)) return value;
+  const path = value.slice(STORAGE_PREFIX.length);
+  const { data } = await supabase.storage.from("portfolio-videos").createSignedUrl(path, 3600);
+  return data?.signedUrl ?? "";
+}
+
 export async function fetchContent(): Promise<ContentMap> {
   const { data, error } = await supabase.from("site_content").select("key, value");
   if (error) throw error;
   const map: ContentMap = { ...DEFAULT_CONTENT };
   for (const row of data ?? []) map[row.key] = row.value;
+  await Promise.all(
+    Object.keys(map)
+      .filter((key) => map[key]?.startsWith(STORAGE_PREFIX))
+      .map(async (key) => {
+        map[key] = await resolveImage(map[key] ?? "");
+      }),
+  );
   return map;
 }
+
 
 export async function fetchVideos(): Promise<VideoRow[]> {
   const { data, error } = await supabase
