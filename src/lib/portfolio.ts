@@ -183,3 +183,15 @@ export async function fetchContacts(): Promise<ContactRow[]> {
   if (error) throw error;
   return (data ?? []) as ContactRow[];
 }
+
+/** Campos de conteúdo que são imagens. */
+export const IMAGE_FIELDS = new Set(["hero_image", "about_image"]);
+
+/** Conteúdo sem resolver imagens (para edição no painel). */
+export async function fetchRawContent(): Promise<ContentMap> {
+  const { data, error } = await supabase.from("site_content").select("key, value");
+  if (error) throw error;
+  const map: ContentMap = { ...DEFAULT_CONTENT };
+  for (const row of data ?? []) map[row.key] = row.value;
+  return map;
+}
