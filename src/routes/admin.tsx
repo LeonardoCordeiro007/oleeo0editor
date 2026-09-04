@@ -522,7 +522,10 @@ function ContentEditor() {
 
   useEffect(() => setDraft(content), [content]);
 
-  const fields = CONTENT_FIELDS.filter((f) => lang === "pt" || !NON_TRANSLATABLE.has(f.key));
+  // Imagens são compartilhadas entre os idiomas — aparecem nas duas abas.
+  const fields = CONTENT_FIELDS.filter(
+    (f) => lang === "pt" || !NON_TRANSLATABLE.has(f.key) || IMAGE_FIELDS.has(f.key),
+  );
   const keyFor = (key: string) => (lang === "en" ? `${key}_en` : key);
 
   const save = async () => {
