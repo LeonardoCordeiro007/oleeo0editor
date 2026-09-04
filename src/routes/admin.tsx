@@ -13,14 +13,17 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   CONTENT_FIELDS,
   DEFAULT_CONTENT,
+  IMAGE_FIELDS,
   NON_TRANSLATABLE,
-
+  STORAGE_PREFIX,
   fetchContacts,
-  fetchContent,
+  fetchRawContent,
   fetchVideos,
   type ContactRow,
   type VideoRow,
 } from "@/lib/portfolio";
+import { uploadFile } from "@/lib/upload";
+
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -270,31 +273,27 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
   const [draft, setDraft] = useState(video);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setDraft(video), [video]);
 
+
   const uploadVideo = async (file: File) => {
     setUploading(true);
+    setProgress(0);
     try {
+      if (file.size > 500 * 1024 * 1024) {
+        throw new Error("O arquivo passa de 500MB. Comprima o vídeo antes de enviar.");
+      }
       const thumbnail = await extractVideoThumbnail(file);
       const extension = file.name.split(".").pop()?.toLowerCase() || "mp4";
       const stamp = Date.now();
       const videoPath = `${video.id}/${stamp}.${extension}`;
       const thumbPath = `${video.id}/${stamp}.jpg`;
 
-      const { error: videoError } = await supabase.storage
-        .from("portfolio-videos")
-        .upload(videoPath, file, { contentType: file.type, upsert: false });
-      if (videoError) throw videoError;
-
-      const { error: thumbError } = await supabase.storage
-        .from("portfolio-videos")
-        .upload(thumbPath, thumbnail.blob, { contentType: "image/jpeg", upsert: false });
-      if (thumbError) {
-        await supabase.storage.from("portfolio-videos").remove([videoPath]);
-        throw thumbError;
-      }
+      await uploadFile(videoPath, file, file.type || "video/mp4", setProgress);
+      await uploadFile(thumbPath, thumbnail.blob, "image/jpeg");
 
       const { error: updateError } = await supabase
         .from("videos")
@@ -317,12 +316,20 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
       toast.success("Vídeo enviado e capa gerada automaticamente.");
       onChanged();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível enviar o vídeo.");
+      toast.error(
+        error instanceof Error
+          ? error.message === "Failed to fetch"
+            ? "A conexão caiu durante o envio. Tente novamente — o envio agora continua de onde parou."
+            : error.message
+          : "Não foi possível enviar o vídeo.",
+      );
     } finally {
       setUploading(false);
+      setProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
 
   const save = async () => {
     setSaving(true);
@@ -408,7 +415,7 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
             ) : (
               <Upload className="mr-2 h-4 w-4" />
             )}
-            {uploading ? "Enviando..." : "Escolher vídeo"}
+            {uploading ? `Enviando... ${progress}%` : "Escolher vídeo"}
           </Button>
           <span className="text-xs text-muted-foreground">
             MP4, WebM ou MOV · a capa e a duração são geradas automaticamente
@@ -505,9 +512,10 @@ function extractVideoThumbnail(file: File): Promise<{ blob: Blob; duration: stri
 function ContentEditor() {
   const invalidate = useInvalidate();
   const { data: content = DEFAULT_CONTENT } = useQuery({
-    queryKey: ["content"],
-    queryFn: fetchContent,
+    queryKey: ["raw-content"],
+    queryFn: fetchRawContent,
   });
+
   const [draft, setDraft] = useState<Record<string, string>>(content);
   const [lang, setLang] = useState<"pt" | "en">("pt");
   const [saving, setSaving] = useState(false);
@@ -559,17 +567,28 @@ function ContentEditor() {
           : "Deixe em branco para reaproveitar o texto em português."}
       </p>
       <div className="frame grid gap-4 p-5 md:grid-cols-2">
-        {fields.map((f) => (
-          <div key={keyFor(f.key)} className={f.multiline ? "md:col-span-2" : ""}>
-            <Field
-              label={f.label}
-              multiline={f.multiline}
-              value={draft[keyFor(f.key)] ?? ""}
-              onChange={(v) => setDraft({ ...draft, [keyFor(f.key)]: v })}
-            />
-          </div>
-        ))}
+        {fields.map((f) =>
+          IMAGE_FIELDS.has(f.key) ? (
+            <div key={f.key} className="md:col-span-2">
+              <ImageField
+                label={f.label}
+                value={draft[f.key] ?? ""}
+                onChange={(v) => setDraft({ ...draft, [f.key]: v })}
+              />
+            </div>
+          ) : (
+            <div key={keyFor(f.key)} className={f.multiline ? "md:col-span-2" : ""}>
+              <Field
+                label={f.label}
+                multiline={f.multiline}
+                value={draft[keyFor(f.key)] ?? ""}
+                onChange={(v) => setDraft({ ...draft, [keyFor(f.key)]: v })}
+              />
+            </div>
+          ),
+        )}
       </div>
+
       <Button onClick={save} disabled={saving}>
         {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Salvar textos
@@ -712,6 +731,98 @@ function Field({
       ) : (
         <Input value={value} onChange={(e) => onChange(e.target.value)} />
       )}
+    </div>
+  );
+}
+
+function ImageField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [preview, setPreview] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      if (!value.startsWith(STORAGE_PREFIX)) {
+        setPreview(value);
+        return;
+      }
+      const { data } = await supabase.storage
+        .from("portfolio-videos")
+        .createSignedUrl(value.slice(STORAGE_PREFIX.length), 3600);
+      if (alive) setPreview(data?.signedUrl ?? "");
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [value]);
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    try {
+      const extension = file.name.split(".").pop()?.toLowerCase() || "jpg";
+      const path = `site/${Date.now()}.${extension}`;
+      await uploadFile(path, file, file.type || "image/jpeg");
+      onChange(`${STORAGE_PREFIX}${path}`);
+      toast.success("Imagem enviada. Clique em salvar textos para publicar.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível enviar a imagem.");
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-3">
+      <Label>{label}</Label>
+      {preview && (
+        <img
+          src={preview}
+          alt={label}
+          className="max-h-48 w-auto rounded-md border border-border object-cover"
+        />
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="sr-only"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void upload(file);
+        }}
+      />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button
+          type="button"
+          size="sm"
+          variant="secondary"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {uploading ? (
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          ) : (
+            <Upload className="mr-2 h-4 w-4" />
+          )}
+          {uploading ? "Enviando..." : "Enviar imagem"}
+        </Button>
+        <Input
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="ou cole uma URL"
+          className="max-w-sm"
+        />
+      </div>
     </div>
   );
 }
