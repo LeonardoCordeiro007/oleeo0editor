@@ -45,7 +45,7 @@ export const DEFAULT_CONTENT: ContentMap = {
   hero_text:
     "Edição de vídeo com ritmo, cor e intenção. Do storyboard à colorização, cada frame recebe o cuidado que merece.",
   hero_file: "REEL_2026.MP4",
-  hero_timecode: "-00:00:42",
+  hero_timecode: "\n",
   hero_image: ICON_URL,
   short_title: "Short format",
   short_meta: "9:16 / VERTICAL",
@@ -68,7 +68,7 @@ export const DEFAULT_CONTENT_EN: ContentMap = {
   hero_text:
     "Video editing with rhythm, color and intention. From storyboard to color grading, every frame gets the care it deserves.",
   hero_file: "REEL_2026.MP4",
-  hero_timecode: "-00:00:42",
+  hero_timecode: "\n",
   hero_image: ICON_URL,
   short_title: "Short format",
   short_meta: "9:16 / VERTICAL",
