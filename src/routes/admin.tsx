@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { toast } from "sonner";
-import { Loader2, LogOut, Plus, Trash2 } from "lucide-react";
+import { Loader2, LogOut, Plus, Trash2, Upload } from "lucide-react";
 
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -54,7 +54,13 @@ function AdminRoute() {
       return;
     }
     void (async () => {
-      const { data } = await supabase.rpc("claim_admin");
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .eq("role", "admin")
+        .maybeSingle();
+      if (error) toast.error(error.message);
       setIsAdmin(Boolean(data));
     })();
   }, [session]);
@@ -253,8 +259,60 @@ function VideosEditor() {
 function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => void }) {
   const [draft, setDraft] = useState(video);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setDraft(video), [video]);
+
+  const uploadVideo = async (file: File) => {
+    setUploading(true);
+    try {
+      const thumbnail = await extractVideoThumbnail(file);
+      const extension = file.name.split(".").pop()?.toLowerCase() || "mp4";
+      const stamp = Date.now();
+      const videoPath = `${video.id}/${stamp}.${extension}`;
+      const thumbPath = `${video.id}/${stamp}.jpg`;
+
+      const { error: videoError } = await supabase.storage
+        .from("portfolio-videos")
+        .upload(videoPath, file, { contentType: file.type, upsert: false });
+      if (videoError) throw videoError;
+
+      const { error: thumbError } = await supabase.storage
+        .from("portfolio-videos")
+        .upload(thumbPath, thumbnail.blob, { contentType: "image/jpeg", upsert: false });
+      if (thumbError) {
+        await supabase.storage.from("portfolio-videos").remove([videoPath]);
+        throw thumbError;
+      }
+
+      const { error: updateError } = await supabase
+        .from("videos")
+        .update({
+          video_path: videoPath,
+          thumb_path: thumbPath,
+          video_url: "",
+          thumb_url: "",
+          duration: thumbnail.duration,
+        })
+        .eq("id", video.id);
+      if (updateError) throw updateError;
+
+      if (video.video_path || video.thumb_path) {
+        await supabase.storage
+          .from("portfolio-videos")
+          .remove([video.video_path, video.thumb_path].filter((path): path is string => Boolean(path)));
+      }
+
+      toast.success("Vídeo enviado e capa gerada automaticamente.");
+      onChanged();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível enviar o vídeo.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const save = async () => {
     setSaving(true);
@@ -267,6 +325,8 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
         duration: draft.duration,
         thumb_url: draft.thumb_url,
         video_url: draft.video_url,
+        thumb_path: draft.thumb_path ?? null,
+        video_path: draft.video_path ?? null,
         sort_order: draft.sort_order,
       })
       .eq("id", video.id);
@@ -284,6 +344,11 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
     if (error) {
       toast.error(error.message);
       return;
+    }
+    if (video.video_path || video.thumb_path) {
+      await supabase.storage
+        .from("portfolio-videos")
+        .remove([video.video_path, video.thumb_path].filter((path): path is string => Boolean(path)));
     }
     toast.success("Vídeo removido.");
     onChanged();
@@ -307,16 +372,45 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
         value={String(draft.sort_order)}
         onChange={(v) => setDraft({ ...draft, sort_order: Number(v) || 0 })}
       />
-      <Field
-        label="Imagem de capa (URL)"
-        value={draft.thumb_url}
-        onChange={(v) => setDraft({ ...draft, thumb_url: v })}
-      />
-      <Field
-        label="Link do vídeo (URL)"
-        value={draft.video_url}
-        onChange={(v) => setDraft({ ...draft, video_url: v })}
-      />
+      <div className="space-y-3 md:col-span-2">
+        <Label>Arquivo do vídeo</Label>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="video/mp4,video/webm,video/quicktime"
+          className="sr-only"
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            if (file) void uploadVideo(file);
+          }}
+        />
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            disabled={uploading}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            {uploading ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="mr-2 h-4 w-4" />
+            )}
+            {uploading ? "Enviando..." : "Escolher vídeo"}
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            MP4, WebM ou MOV · a capa e a duração são geradas automaticamente
+          </span>
+        </div>
+        {draft.thumb_url && (
+          <img
+            src={draft.thumb_url}
+            alt={`Capa atual de ${draft.title}`}
+            className="aspect-video w-full max-w-xs rounded-md border border-border object-cover"
+          />
+        )}
+      </div>
       <div className="md:col-span-2">
         <Field
           label="Descrição"
@@ -336,6 +430,53 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
       </div>
     </div>
   );
+}
+
+function extractVideoThumbnail(file: File): Promise<{ blob: Blob; duration: string }> {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement("video");
+    const objectUrl = URL.createObjectURL(file);
+    video.preload = "metadata";
+    video.muted = true;
+    video.playsInline = true;
+
+    const cleanup = () => URL.revokeObjectURL(objectUrl);
+    video.onerror = () => {
+      cleanup();
+      reject(new Error("Este formato de vídeo não pôde ser lido pelo navegador."));
+    };
+    video.onloadedmetadata = () => {
+      video.currentTime = Math.min(1, Math.max(0, video.duration / 3));
+    };
+    video.onseeked = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const context = canvas.getContext("2d");
+      if (!context) {
+        cleanup();
+        reject(new Error("Não foi possível gerar a capa do vídeo."));
+        return;
+      }
+      context.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob(
+        (blob) => {
+          cleanup();
+          if (!blob) {
+            reject(new Error("Não foi possível gerar a capa do vídeo."));
+            return;
+          }
+          const totalSeconds = Math.round(video.duration || 0);
+          const minutes = Math.floor(totalSeconds / 60);
+          const seconds = String(totalSeconds % 60).padStart(2, "0");
+          resolve({ blob, duration: `${minutes}:${seconds}` });
+        },
+        "image/jpeg",
+        0.86,
+      );
+    };
+    video.src = objectUrl;
+  });
 }
 
 function ContentEditor() {

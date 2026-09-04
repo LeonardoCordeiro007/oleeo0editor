@@ -98,9 +98,11 @@ export type Database = {
           format: string
           id: string
           sort_order: number
+          thumb_path: string | null
           thumb_url: string
           title: string
           updated_at: string
+          video_path: string | null
           video_url: string
         }
         Insert: {
@@ -111,9 +113,11 @@ export type Database = {
           format?: string
           id?: string
           sort_order?: number
+          thumb_path?: string | null
           thumb_url?: string
           title?: string
           updated_at?: string
+          video_path?: string | null
           video_url?: string
         }
         Update: {
@@ -124,9 +128,11 @@ export type Database = {
           format?: string
           id?: string
           sort_order?: number
+          thumb_path?: string | null
           thumb_url?: string
           title?: string
           updated_at?: string
+          video_path?: string | null
           video_url?: string
         }
         Relationships: []
