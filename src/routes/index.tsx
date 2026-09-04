@@ -276,7 +276,7 @@ function Portfolio() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-[1200px] px-6">
+      <main key={lang} className="mx-auto max-w-[1200px] px-6 animate-fade-in">
         {/* HERO */}
         <section id="home" className="scroll-mt-24 grid gap-10 py-16 md:grid-cols-[1.1fr_1fr] md:items-center md:py-24">
           <div>
