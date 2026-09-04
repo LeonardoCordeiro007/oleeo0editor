@@ -41,92 +41,14 @@ export const Route = createFileRoute("/")({
         content: "Projetos em formato curto e longo editados com ritmo, cor e intenção.",
       },
     ],
+    links: [
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico?v=2" },
+      { rel: "icon", type: "image/png", href: "/favicon.png?v=2" },
+      { rel: "apple-touch-icon", href: "/favicon.png?v=2" },
+    ],
   }),
   component: Portfolio,
 });
-
-const FALLBACK_SHORTS: VideoRow[] = [
-  {
-    id: "s1",
-    format: "short",
-    title: "Pausa para Dança",
-    description: "",
-    category: "",
-    duration: "0:28",
-    thumb_url: "/images/short-danca.jpg",
-    video_url: "",
-    sort_order: 1,
-  },
-  {
-    id: "s2",
-    format: "short",
-    title: "Ritual do Café",
-    description: "",
-    category: "",
-    duration: "0:19",
-    thumb_url: "/images/short-cafe.jpg",
-    video_url: "",
-    sort_order: 2,
-  },
-  {
-    id: "s3",
-    format: "short",
-    title: "Pedal Neon",
-    description: "",
-    category: "",
-    duration: "0:34",
-    thumb_url: "/images/short-pedal.jpg",
-    video_url: "",
-    sort_order: 3,
-  },
-  {
-    id: "s4",
-    format: "short",
-    title: "Comida de Rua",
-    description: "",
-    category: "",
-    duration: "0:22",
-    thumb_url: "/images/short-comida.jpg",
-    video_url: "",
-    sort_order: 4,
-  },
-];
-
-const FALLBACK_LONGS: VideoRow[] = [
-  {
-    id: "l1",
-    format: "long",
-    title: "Serra ao Amanhecer",
-    description: "Retrato de uma comunidade de montanha em 12 minutos de luz natural.",
-    category: "Documentário",
-    duration: "12:34",
-    thumb_url: "/images/long-serra.jpg",
-    video_url: "",
-    sort_order: 1,
-  },
-  {
-    id: "l2",
-    format: "long",
-    title: "Eco de Estação",
-    description: "Set ao vivo editado com cortes sincronizados ao ritmo.",
-    category: "Performance",
-    duration: "8:12",
-    thumb_url: "/images/long-eco.jpg",
-    video_url: "",
-    sort_order: 2,
-  },
-  {
-    id: "l3",
-    format: "long",
-    title: "Cozinha Aberta",
-    description: "Filme de marca para um restaurante, com a cozinha como protagonista.",
-    category: "Marca",
-    duration: "3:45",
-    thumb_url: "/images/long-cozinha.jpg",
-    video_url: "",
-    sort_order: 3,
-  },
-];
 
 const FALLBACK_CONTACTS: ContactRow[] = [
   {
@@ -170,9 +92,11 @@ function ContactIcon({ icon }: { icon: string }) {
 function videoTitle(v: VideoRow, lang: Lang) {
   return (lang === "en" && v.title_en?.trim()) || v.title;
 }
+
 function videoDescription(v: VideoRow, lang: Lang) {
   return (lang === "en" && v.description_en?.trim()) || v.description;
 }
+
 function videoCategory(v: VideoRow, lang: Lang) {
   return (lang === "en" && v.category_en?.trim()) || v.category;
 }
@@ -212,11 +136,14 @@ function Portfolio() {
     queryFn: fetchContent,
     placeholderData: DEFAULT_CONTENT,
   });
+
+  // Não usa vídeos de exemplo enquanto o Supabase carrega.
+  // Assim, nenhuma thumbnail/projeto falso pisca na tela ao abrir o site.
   const { data: videos = [] } = useQuery({
     queryKey: ["videos"],
     queryFn: fetchVideos,
-    placeholderData: [...FALLBACK_SHORTS, ...FALLBACK_LONGS],
   });
+
   const { data: contacts = FALLBACK_CONTACTS } = useQuery({
     queryKey: ["contacts"],
     queryFn: fetchContacts,
@@ -224,12 +151,14 @@ function Portfolio() {
   });
 
   const ui = UI_TEXT[lang];
+
   // Vídeos são separados por idioma; se um idioma ainda não tem vídeos, reaproveita os de PT.
   const ptVideos = videos.filter((v) => (v.lang ?? "pt") !== "en");
   const enVideos = videos.filter((v) => v.lang === "en");
   const langVideos = lang === "en" && enVideos.length > 0 ? enVideos : ptVideos;
   const shorts = langVideos.filter((v) => v.format === "short");
   const longs = langVideos.filter((v) => v.format === "long");
+  const heroImage = t(content, "hero_image", lang).trim();
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -246,9 +175,10 @@ function Portfolio() {
             height={32}
             className="h-8 w-8 rounded-md object-cover ring-1 ring-signal/40"
           />
-          <span className="font-display text-lg tracking-wide">{highlightEditor(t(content, "brand_name", lang))}</span>
+          <span className="font-display text-lg tracking-wide">
+            {highlightEditor(t(content, "brand_name", lang))}
+          </span>
           <span className="mono-label hidden sm:inline">{t(content, "brand_role", lang)}</span>
-
           <nav className="ml-auto flex items-center gap-1">
             {[
               { id: "home", label: ui.home },
@@ -290,7 +220,10 @@ function Portfolio() {
 
       <main key={lang} className="mx-auto max-w-[1200px] px-6 animate-fade-in">
         {/* HERO */}
-        <section id="home" className="scroll-mt-24 grid gap-10 py-16 md:grid-cols-[1.1fr_1fr] md:items-center md:py-24">
+        <section
+          id="home"
+          className="scroll-mt-24 grid gap-10 py-16 md:grid-cols-[1.1fr_1fr] md:items-center md:py-24"
+        >
           <div>
             <p className="mono-label flex items-center gap-2">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-signal" />
@@ -308,13 +241,17 @@ function Portfolio() {
 
           <figure className="frame overflow-hidden p-3">
             <div className="glow-media overflow-hidden rounded-xl">
-              <img
-                src={t(content, "hero_image", lang)}
-                alt="Ícone do editor"
-                width={1280}
-                height={1280}
-                className="aspect-square w-full object-cover"
-              />
+              {heroImage ? (
+                <img
+                  src={heroImage}
+                  alt="Imagem principal do portfólio"
+                  width={1280}
+                  height={1280}
+                  className="aspect-square w-full object-cover"
+                />
+              ) : (
+                <div className="aspect-square w-full bg-card" aria-hidden />
+              )}
             </div>
             <figcaption className="mono-label flex items-center justify-between px-1 pt-3">
               <span>{t(content, "hero_file", lang)}</span>
@@ -329,7 +266,6 @@ function Portfolio() {
             <h2 className="display-title text-3xl md:text-4xl">{t(content, "short_title", lang)}</h2>
             <span className="mono-label">{t(content, "short_meta", lang)}</span>
           </div>
-
           <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
             {shorts.map((v) => (
               <VideoCardVertical key={v.id} video={v} lang={lang} onOpen={() => setActive(v)} />
@@ -343,7 +279,6 @@ function Portfolio() {
             <h2 className="display-title text-3xl md:text-4xl">{t(content, "long_title", lang)}</h2>
             <span className="mono-label">{t(content, "long_meta", lang)}</span>
           </div>
-
           <div className="mt-6 grid gap-4 md:grid-cols-3">
             {longs.map((v) => (
               <VideoCardWide key={v.id} video={v} lang={lang} onOpen={() => setActive(v)} />
@@ -385,7 +320,6 @@ function Portfolio() {
             {t(content, "contact_title", lang)}
             <span className="text-signal">.</span>
           </h2>
-
           <div className="mt-10 grid gap-5 md:grid-cols-2">
             {contacts.map((c) => (
               <ContactCard key={c.id} contact={c} />
@@ -472,7 +406,9 @@ function VideoModal({
         </button>
 
         <div
-          className={`overflow-hidden rounded-xl bg-black ${vertical ? "aspect-9/16 max-h-[80vh]" : "aspect-video"}`}
+          className={`overflow-hidden rounded-xl bg-black ${
+            vertical ? "aspect-9/16 max-h-[80vh]" : "aspect-video"
+          }`}
         >
           {embed ? (
             <iframe
