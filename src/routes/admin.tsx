@@ -13,14 +13,17 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   CONTENT_FIELDS,
   DEFAULT_CONTENT,
+  IMAGE_FIELDS,
   NON_TRANSLATABLE,
-
+  STORAGE_PREFIX,
   fetchContacts,
-  fetchContent,
+  fetchRawContent,
   fetchVideos,
   type ContactRow,
   type VideoRow,
 } from "@/lib/portfolio";
+import { uploadFile } from "@/lib/upload";
+
 
 export const Route = createFileRoute("/admin")({
   ssr: false,
@@ -270,31 +273,27 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
   const [draft, setDraft] = useState(video);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => setDraft(video), [video]);
 
+
   const uploadVideo = async (file: File) => {
     setUploading(true);
+    setProgress(0);
     try {
+      if (file.size > 500 * 1024 * 1024) {
+        throw new Error("O arquivo passa de 500MB. Comprima o vídeo antes de enviar.");
+      }
       const thumbnail = await extractVideoThumbnail(file);
       const extension = file.name.split(".").pop()?.toLowerCase() || "mp4";
       const stamp = Date.now();
       const videoPath = `${video.id}/${stamp}.${extension}`;
       const thumbPath = `${video.id}/${stamp}.jpg`;
 
-      const { error: videoError } = await supabase.storage
-        .from("portfolio-videos")
-        .upload(videoPath, file, { contentType: file.type, upsert: false });
-      if (videoError) throw videoError;
-
-      const { error: thumbError } = await supabase.storage
-        .from("portfolio-videos")
-        .upload(thumbPath, thumbnail.blob, { contentType: "image/jpeg", upsert: false });
-      if (thumbError) {
-        await supabase.storage.from("portfolio-videos").remove([videoPath]);
-        throw thumbError;
-      }
+      await uploadFile(videoPath, file, file.type || "video/mp4", setProgress);
+      await uploadFile(thumbPath, thumbnail.blob, "image/jpeg");
 
       const { error: updateError } = await supabase
         .from("videos")
@@ -317,12 +316,20 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
       toast.success("Vídeo enviado e capa gerada automaticamente.");
       onChanged();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível enviar o vídeo.");
+      toast.error(
+        error instanceof Error
+          ? error.message === "Failed to fetch"
+            ? "A conexão caiu durante o envio. Tente novamente — o envio agora continua de onde parou."
+            : error.message
+          : "Não foi possível enviar o vídeo.",
+      );
     } finally {
       setUploading(false);
+      setProgress(0);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
+
 
   const save = async () => {
     setSaving(true);
