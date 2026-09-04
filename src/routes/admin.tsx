@@ -547,6 +547,20 @@ function ContentEditor() {
     invalidate();
   };
 
+  const [savingImages, setSavingImages] = useState(false);
+  const saveImages = async () => {
+    setSavingImages(true);
+    const rows = [...IMAGE_FIELDS].map((key) => ({ key, value: draft[key] ?? "" }));
+    const { error } = await supabase.from("site_content").upsert(rows, { onConflict: "key" });
+    setSavingImages(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success("Imagens salvas e publicadas.");
+    invalidate();
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex gap-2">
