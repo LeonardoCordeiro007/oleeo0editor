@@ -92,8 +92,10 @@ export type Database = {
       videos: {
         Row: {
           category: string
+          category_en: string
           created_at: string
           description: string
+          description_en: string
           duration: string
           format: string
           id: string
@@ -101,14 +103,17 @@ export type Database = {
           thumb_path: string | null
           thumb_url: string
           title: string
+          title_en: string
           updated_at: string
           video_path: string | null
           video_url: string
         }
         Insert: {
           category?: string
+          category_en?: string
           created_at?: string
           description?: string
+          description_en?: string
           duration?: string
           format?: string
           id?: string
@@ -116,14 +121,17 @@ export type Database = {
           thumb_path?: string | null
           thumb_url?: string
           title?: string
+          title_en?: string
           updated_at?: string
           video_path?: string | null
           video_url?: string
         }
         Update: {
           category?: string
+          category_en?: string
           created_at?: string
           description?: string
+          description_en?: string
           duration?: string
           format?: string
           id?: string
@@ -131,6 +139,7 @@ export type Database = {
           thumb_path?: string | null
           thumb_url?: string
           title?: string
+          title_en?: string
           updated_at?: string
           video_path?: string | null
           video_url?: string
