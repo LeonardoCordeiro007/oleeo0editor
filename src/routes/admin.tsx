@@ -826,16 +826,81 @@ function ImageField({
     }
   };
 
+  const boxRef = useRef<HTMLDivElement>(null);
+  const dragRef = useRef<{ px: number; py: number; x: number; y: number } | null>(null);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { px: e.clientX, py: e.clientY, x: fit.x, y: fit.y };
+  };
+  const onPointerMove = (e: React.PointerEvent) => {
+    const start = dragRef.current;
+    const box = boxRef.current;
+    if (!start || !box) return;
+    const rect = box.getBoundingClientRect();
+    const clamp = (n: number) => Math.min(100, Math.max(0, n));
+    onFitChange({
+      ...fit,
+      x: clamp(start.x - ((e.clientX - start.px) / rect.width) * 100),
+      y: clamp(start.y - ((e.clientY - start.py) / rect.height) * 100),
+    });
+  };
+  const endDrag = () => {
+    dragRef.current = null;
+  };
+
   return (
     <div className="space-y-3">
       <Label>{label}</Label>
       {preview && (
-        <img
-          src={preview}
-          alt={label}
-          className="max-h-48 w-auto rounded-md border border-border object-cover"
-        />
+        <div className="space-y-2">
+          <div
+            ref={boxRef}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={endDrag}
+            onPointerCancel={endDrag}
+            className="relative w-56 max-w-full cursor-grab touch-none overflow-hidden rounded-md border border-border bg-muted active:cursor-grabbing"
+            style={{ aspectRatio: String(aspect) }}
+          >
+            <img
+              src={preview}
+              alt={label}
+              draggable={false}
+              className="pointer-events-none h-full w-full select-none object-cover"
+              style={{
+                objectPosition: `${fit.x}% ${fit.y}%`,
+                transform: fit.scale === 1 ? undefined : `scale(${fit.scale})`,
+              }}
+            />
+            <div className="pointer-events-none absolute inset-0 border border-signal/30" />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Arraste a imagem para escolher o enquadramento exibido na página.
+          </p>
+          <div className="flex items-center gap-3">
+            <span className="mono-label">Zoom</span>
+            <input
+              type="range"
+              min={1}
+              max={2.5}
+              step={0.01}
+              value={fit.scale}
+              onChange={(e) => onFitChange({ ...fit, scale: Number(e.target.value) })}
+              className="w-48 accent-[var(--signal)]"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              onClick={() => onFitChange({ x: 50, y: 50, scale: 1 })}
+            >
+              Redefinir
+            </Button>
+          </div>
+        </div>
       )}
+
       <input
         ref={inputRef}
         type="file"
