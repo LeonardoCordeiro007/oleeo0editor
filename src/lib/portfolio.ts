@@ -9,6 +9,8 @@ export type VideoRow = {
   duration: string;
   thumb_url: string;
   video_url: string;
+  thumb_path: string | null;
+  video_path: string | null;
   sort_order: number;
 };
 
@@ -84,7 +86,25 @@ export async function fetchVideos(): Promise<VideoRow[]> {
     .select("*")
     .order("sort_order", { ascending: true });
   if (error) throw error;
-  return (data ?? []) as VideoRow[];
+  const videos = (data ?? []) as VideoRow[];
+  return Promise.all(
+    videos.map(async (video) => {
+      const [videoResult, thumbResult] = await Promise.all([
+        video.video_path
+          ? supabase.storage.from("portfolio-videos").createSignedUrl(video.video_path, 3600)
+          : Promise.resolve({ data: null, error: null }),
+        video.thumb_path
+          ? supabase.storage.from("portfolio-videos").createSignedUrl(video.thumb_path, 3600)
+          : Promise.resolve({ data: null, error: null }),
+      ]);
+
+      return {
+        ...video,
+        video_url: videoResult.data?.signedUrl ?? video.video_url,
+        thumb_url: thumbResult.data?.signedUrl ?? video.thumb_url,
+      };
+    }),
+  );
 }
 
 export async function fetchContacts(): Promise<ContactRow[]> {
