@@ -87,6 +87,8 @@ export function t(content: ContentMap, key: string, lang: Lang): string {
   if (lang === "en") {
     const en = content[`${key}_en`];
     if (en && en.trim()) return en;
+    // Imagens são compartilhadas entre idiomas — nunca cair no padrão em inglês.
+    if (IMAGE_FIELDS.has(key)) return content[key] ?? DEFAULT_CONTENT[key] ?? "";
     return DEFAULT_CONTENT_EN[key] ?? content[key] ?? "";
   }
   return content[key] ?? DEFAULT_CONTENT[key] ?? "";
