@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   CONTENT_FIELDS,
   DEFAULT_CONTENT,
+  NON_TRANSLATABLE,
+
   fetchContacts,
   fetchContent,
   fetchVideos,
