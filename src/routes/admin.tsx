@@ -414,6 +414,18 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
             className="aspect-video w-full max-w-xs rounded-md border border-border object-cover"
           />
         )}
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field
+            label="Ou link do vídeo (YouTube, Vimeo, MP4)"
+            value={draft.video_url}
+            onChange={(v) => setDraft({ ...draft, video_url: v, video_path: null })}
+          />
+          <Field
+            label="Capa por URL (opcional)"
+            value={draft.thumb_url}
+            onChange={(v) => setDraft({ ...draft, thumb_url: v, thumb_path: null })}
+          />
+        </div>
       </div>
       <div className="md:col-span-2">
         <Field
@@ -423,6 +435,28 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
           onChange={(v) => setDraft({ ...draft, description: v })}
         />
       </div>
+      <div className="space-y-4 rounded-lg border border-border/60 p-4 md:col-span-2">
+        <p className="mono-label">Versão em inglês</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field
+            label="Title (EN)"
+            value={draft.title_en ?? ""}
+            onChange={(v) => setDraft({ ...draft, title_en: v })}
+          />
+          <Field
+            label="Category (EN)"
+            value={draft.category_en ?? ""}
+            onChange={(v) => setDraft({ ...draft, category_en: v })}
+          />
+        </div>
+        <Field
+          label="Description (EN)"
+          multiline
+          value={draft.description_en ?? ""}
+          onChange={(v) => setDraft({ ...draft, description_en: v })}
+        />
+      </div>
+
       <div className="flex gap-2 md:col-span-2">
         <Button size="sm" onClick={save} disabled={saving}>
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
