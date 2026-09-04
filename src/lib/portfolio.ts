@@ -20,6 +20,7 @@ export type VideoRow = {
   thumb_path?: string | null;
   video_path?: string | null;
   sort_order: number;
+  lang?: string;
 };
 
 

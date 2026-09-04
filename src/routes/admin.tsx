@@ -221,11 +221,12 @@ function VideosEditor() {
   const invalidate = useInvalidate();
   const { data: videos = [] } = useQuery({ queryKey: ["videos"], queryFn: fetchVideos });
 
-  const addVideo = async (format: string) => {
+  const addVideo = async (format: string, lang: "pt" | "en") => {
     const { error } = await supabase.from("videos").insert({
       format,
-      title: "Novo vídeo",
-      sort_order: videos.filter((v) => v.format === format).length + 1,
+      lang,
+      title: lang === "en" ? "New video" : "Novo vídeo",
+      sort_order: videos.filter((v) => v.format === format && (v.lang ?? "pt") === lang).length + 1,
     });
     if (error) {
       toast.error(error.message);
@@ -236,23 +237,30 @@ function VideosEditor() {
   };
 
   return (
-    <div className="space-y-10">
-      {(["short", "long"] as const).map((format) => (
-        <section key={format} className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="display-title text-xl">
-              {format === "short" ? "Vertical (9:16)" : "Horizontal (16:9)"}
-            </h2>
-            <Button size="sm" variant="secondary" onClick={() => addVideo(format)}>
-              <Plus className="mr-2 h-4 w-4" /> Adicionar
-            </Button>
-          </div>
-          {videos
-            .filter((v) => v.format === format)
-            .map((v) => (
-              <VideoForm key={v.id} video={v} onChanged={invalidate} />
-            ))}
-        </section>
+    <div className="space-y-12">
+      {(["pt", "en"] as const).map((lang) => (
+        <div key={lang} className="space-y-6">
+          <h2 className="display-title border-b border-border/60 pb-3 text-2xl">
+            {lang === "pt" ? "Vídeos em Português" : "Videos in English"}
+          </h2>
+          {(["short", "long"] as const).map((format) => (
+            <section key={format} className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="display-title text-xl">
+                  {format === "short" ? "Vertical (9:16)" : "Horizontal (16:9)"}
+                </h3>
+                <Button size="sm" variant="secondary" onClick={() => addVideo(format, lang)}>
+                  <Plus className="mr-2 h-4 w-4" /> Adicionar
+                </Button>
+              </div>
+              {videos
+                .filter((v) => v.format === format && (v.lang ?? "pt") === lang)
+                .map((v) => (
+                  <VideoForm key={v.id} video={v} onChanged={invalidate} />
+                ))}
+            </section>
+          ))}
+        </div>
       ))}
     </div>
   );
@@ -324,9 +332,6 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
         title: draft.title,
         description: draft.description,
         category: draft.category,
-        title_en: draft.title_en ?? "",
-        description_en: draft.description_en ?? "",
-        category_en: draft.category_en ?? "",
         duration: draft.duration,
         thumb_url: draft.thumb_url,
         video_url: draft.video_url,
@@ -437,28 +442,6 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
           onChange={(v) => setDraft({ ...draft, description: v })}
         />
       </div>
-      <div className="space-y-4 rounded-lg border border-border/60 p-4 md:col-span-2">
-        <p className="mono-label">Versão em inglês</p>
-        <div className="grid gap-4 md:grid-cols-2">
-          <Field
-            label="Title (EN)"
-            value={draft.title_en ?? ""}
-            onChange={(v) => setDraft({ ...draft, title_en: v })}
-          />
-          <Field
-            label="Category (EN)"
-            value={draft.category_en ?? ""}
-            onChange={(v) => setDraft({ ...draft, category_en: v })}
-          />
-        </div>
-        <Field
-          label="Description (EN)"
-          multiline
-          value={draft.description_en ?? ""}
-          onChange={(v) => setDraft({ ...draft, description_en: v })}
-        />
-      </div>
-
       <div className="flex gap-2 md:col-span-2">
         <Button size="sm" onClick={save} disabled={saving}>
           {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

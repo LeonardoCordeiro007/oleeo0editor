@@ -99,6 +99,7 @@ export type Database = {
           duration: string
           format: string
           id: string
+          lang: string
           sort_order: number
           thumb_path: string | null
           thumb_url: string
@@ -117,6 +118,7 @@ export type Database = {
           duration?: string
           format?: string
           id?: string
+          lang?: string
           sort_order?: number
           thumb_path?: string | null
           thumb_url?: string
@@ -135,6 +137,7 @@ export type Database = {
           duration?: string
           format?: string
           id?: string
+          lang?: string
           sort_order?: number
           thumb_path?: string | null
           thumb_url?: string
