@@ -322,6 +322,9 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
         title: draft.title,
         description: draft.description,
         category: draft.category,
+        title_en: draft.title_en ?? "",
+        description_en: draft.description_en ?? "",
+        category_en: draft.category_en ?? "",
         duration: draft.duration,
         thumb_url: draft.thumb_url,
         video_url: draft.video_url,
@@ -338,6 +341,7 @@ function VideoForm({ video, onChanged }: { video: VideoRow; onChanged: () => voi
     toast.success("Vídeo salvo.");
     onChanged();
   };
+
 
   const remove = async () => {
     const { error } = await supabase.from("videos").delete().eq("id", video.id);
