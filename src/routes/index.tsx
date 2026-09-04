@@ -177,6 +177,18 @@ function videoCategory(v: VideoRow, lang: Lang) {
   return (lang === "en" && v.category_en?.trim()) || v.category;
 }
 
+function highlightEditor(text: string) {
+  if (!text.includes("EDITOR")) return text;
+  const [before, after] = text.split("EDITOR");
+  return (
+    <>
+      {before}
+      <span className="text-signal">EDITOR</span>
+      {after}
+    </>
+  );
+}
+
 function Portfolio() {
   const [lang, setLangState] = useState<Lang>("pt");
   const [active, setActive] = useState<VideoRow | null>(null);
@@ -234,7 +246,7 @@ function Portfolio() {
             height={32}
             className="h-8 w-8 rounded-md object-cover ring-1 ring-signal/40"
           />
-          <span className="font-display text-lg tracking-wide">{t(content, "brand_name", lang)}</span>
+          <span className="font-display text-lg tracking-wide">{highlightEditor(t(content, "brand_name", lang))}</span>
           <span className="mono-label hidden sm:inline">{t(content, "brand_role", lang)}</span>
 
           <nav className="ml-auto flex items-center gap-1">
@@ -285,9 +297,9 @@ function Portfolio() {
               {t(content, "hero_kicker", lang)}
             </p>
             <h1 className="display-title mt-5 text-[clamp(3.5rem,12vw,8rem)] text-foreground">
-              {t(content, "hero_title_1", lang)}
+              {highlightEditor(t(content, "hero_title_1", lang))}
               <br />
-              {t(content, "hero_title_2", lang)}
+              {highlightEditor(t(content, "hero_title_2", lang))}
             </h1>
             <p className="mt-6 max-w-md text-sm leading-relaxed text-muted-foreground">
               {t(content, "hero_text", lang)}
