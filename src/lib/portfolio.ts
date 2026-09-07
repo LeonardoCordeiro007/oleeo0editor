@@ -163,17 +163,6 @@ export const NON_TRANSLATABLE = new Set([
 /** Prefixo usado quando a imagem foi enviada para o armazenamento do projeto. */
 export const STORAGE_PREFIX = "storage:";
 
-async function resolveImage(value: string): Promise<string> {
-  if (!value.startsWith(STORAGE_PREFIX)) return value;
-
-  const path = value.slice(STORAGE_PREFIX.length);
-  const { data } = await supabase.storage
-    .from("portfolio-videos")
-    .createSignedUrl(path, 3600);
-
-  return data?.signedUrl ?? "";
-}
-
 export async function fetchContent(): Promise<ContentMap> {
   const { data, error } = await supabase
     .from("site_content")
@@ -182,16 +171,27 @@ export async function fetchContent(): Promise<ContentMap> {
   if (error) throw error;
 
   const map: ContentMap = { ...DEFAULT_CONTENT };
-
   for (const row of data ?? []) map[row.key] = row.value;
 
-  await Promise.all(
-    Object.keys(map)
-      .filter((key) => map[key]?.startsWith(STORAGE_PREFIX))
-      .map(async (key) => {
-        map[key] = await resolveImage(map[key] ?? "");
-      }),
+  const storageEntries = Object.entries(map).filter(([, value]) =>
+    value?.startsWith(STORAGE_PREFIX),
   );
+
+  if (storageEntries.length === 0) return map;
+
+  const paths = storageEntries.map(([, value]) =>
+    value.slice(STORAGE_PREFIX.length),
+  );
+
+  const { data: signedImages, error: signError } = await supabase.storage
+    .from("portfolio-videos")
+    .createSignedUrls(paths, 3600);
+
+  if (signError || !signedImages) return map;
+
+  storageEntries.forEach(([key], index) => {
+    map[key] = signedImages[index]?.signedUrl ?? "";
+  });
 
   return map;
 }
@@ -206,29 +206,42 @@ export async function fetchVideos(): Promise<VideoRow[]> {
 
   const videos = (data ?? []) as VideoRow[];
 
-  return Promise.all(
-    videos.map(async (video) => {
-      const [videoResult, thumbResult] = await Promise.all([
-        video.video_path
-          ? supabase.storage
-              .from("portfolio-videos")
-              .createSignedUrl(video.video_path, 3600)
-          : Promise.resolve({ data: null, error: null }),
-
-        video.thumb_path
-          ? supabase.storage
-              .from("portfolio-videos")
-              .createSignedUrl(video.thumb_path, 3600)
-          : Promise.resolve({ data: null, error: null }),
-      ]);
-
-      return {
-        ...video,
-        video_url: videoResult.data?.signedUrl ?? video.video_url,
-        thumb_url: thumbResult.data?.signedUrl ?? video.thumb_url,
-      };
-    }),
+  // Antes: até 2 requisições extras por vídeo (thumbnail + vídeo).
+  // Agora: todas as URLs assinadas são geradas em UMA única requisição.
+  const paths = Array.from(
+    new Set(
+      videos.flatMap((video) =>
+        [video.thumb_path, video.video_path].filter(
+          (path): path is string => Boolean(path),
+        ),
+      ),
+    ),
   );
+
+  if (paths.length === 0) return videos;
+
+  const { data: signedFiles, error: signError } = await supabase.storage
+    .from("portfolio-videos")
+    .createSignedUrls(paths, 3600);
+
+  if (signError || !signedFiles) return videos;
+
+  const urlByPath = new Map<string, string>();
+
+  paths.forEach((path, index) => {
+    const signedUrl = signedFiles[index]?.signedUrl;
+    if (signedUrl) urlByPath.set(path, signedUrl);
+  });
+
+  return videos.map((video) => ({
+    ...video,
+    video_url:
+      (video.video_path && urlByPath.get(video.video_path)) ||
+      video.video_url,
+    thumb_url:
+      (video.thumb_path && urlByPath.get(video.thumb_path)) ||
+      video.thumb_url,
+  }));
 }
 
 export async function fetchContacts(): Promise<ContactRow[]> {
