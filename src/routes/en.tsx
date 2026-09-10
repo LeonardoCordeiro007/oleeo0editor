@@ -2,23 +2,23 @@ import { createFileRoute } from "@tanstack/react-router";
 
 import { PortfolioPage } from "@/components/PortfolioPage";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/en")({
   head: () => ({
     meta: [
-      { title: "Oleeo0 Editor — Portfólio de Edição de Vídeo" },
+      { title: "Oleeo0 Editor — Video Editing Portfolio" },
       {
         name: "description",
         content:
-          "Portfólio de edição de vídeo: projetos em formato curto e longo, com ritmo, cor e intenção.",
+          "Video editing portfolio with short-form and long-form projects focused on rhythm, color and intention.",
       },
       {
         property: "og:title",
-        content: "Oleeo0 Editor — Portfólio de Edição de Vídeo",
+        content: "Oleeo0 Editor — Video Editing Portfolio",
       },
       {
         property: "og:description",
         content:
-          "Projetos em formato curto e longo editados com ritmo, cor e intenção.",
+          "Short-form and long-form video editing projects with rhythm, color and intention.",
       },
     ],
     links: [
@@ -27,9 +27,9 @@ export const Route = createFileRoute("/")({
       { rel: "apple-touch-icon", href: "/favicon.png?v=2" },
     ],
   }),
-  component: PortuguesePortfolio,
+  component: EnglishPortfolio,
 });
 
-function PortuguesePortfolio() {
-  return <PortfolioPage lang="pt" />;
+function EnglishPortfolio() {
+  return <PortfolioPage lang="en" />;
 }
