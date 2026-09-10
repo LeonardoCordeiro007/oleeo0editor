@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 export const ICON_URL = "/rudeus.jpg";
 
 export type Lang = "pt" | "en";
+
 export type VideoRow = {
   id: string;
   format: string;
@@ -41,14 +42,9 @@ export const DEFAULT_CONTENT: ContentMap = {
   hero_title_2: "EDITOR",
   hero_text:
     "Edição de vídeo com ritmo, cor e intenção. Do storyboard à colorização, cada frame recebe o cuidado que merece.",
-
-  // Vazios no fallback: evita o texto do reel piscar antes do Supabase carregar.
   hero_file: "",
   hero_timecode: "",
-
-  // Sem imagem de fallback: evita mostrar uma imagem errada antes do conteúdo do Supabase carregar.
   hero_image: "",
-
   short_title: "Short format",
   short_meta: "9:16 / VERTICAL",
   long_title: "Long format",
@@ -56,11 +52,8 @@ export const DEFAULT_CONTENT: ContentMap = {
   about_title: "Sobre mim",
   about_text:
     "Sou Oleeo0, editor e colorista. Trabalho com produtoras independentes e marcas que buscam uma linguagem própria. Menos excesso, mais intenção.",
-
-  // Placeholder transparente: evita mostrar a foto de exemplo durante o carregamento.
   about_image:
     "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
-
   contact_title: "contact",
   footer_text: "OLEEO0 EDITOR — EDIÇÃO",
 };
@@ -73,13 +66,9 @@ export const DEFAULT_CONTENT_EN: ContentMap = {
   hero_title_2: "EDITOR",
   hero_text:
     "Video editing with rhythm, color and intention. From storyboard to color grading, every frame gets the care it deserves.",
-
-  // Vazios no fallback: evita o texto do reel piscar antes do Supabase carregar.
   hero_file: "",
   hero_timecode: "",
-
   hero_image: "",
-
   short_title: "Short format",
   short_meta: "9:16 / VERTICAL",
   long_title: "Long format",
@@ -87,23 +76,20 @@ export const DEFAULT_CONTENT_EN: ContentMap = {
   about_title: "About me",
   about_text:
     "I'm Oleeo0, editor and colorist. I work with independent production companies and brands looking for a voice of their own. Less excess, more intention.",
-
-  // Placeholder transparente: evita mostrar a foto de exemplo durante o carregamento.
   about_image:
     "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==",
-
   contact_title: "contact",
   footer_text: "OLEEO0 EDITOR — EDITING",
 };
 
-/** Lê um texto respeitando o idioma: em inglês usa a chave `<key>_en` quando preenchida. */
 export function t(content: ContentMap, key: string, lang: Lang): string {
   if (lang === "en") {
     const en = content[`${key}_en`];
     if (en && en.trim()) return en;
 
-    // Imagens são compartilhadas entre idiomas — nunca cair no padrão em inglês.
-    if (IMAGE_FIELDS.has(key)) return content[key] ?? DEFAULT_CONTENT[key] ?? "";
+    if (IMAGE_FIELDS.has(key)) {
+      return content[key] ?? DEFAULT_CONTENT[key] ?? "";
+    }
 
     return DEFAULT_CONTENT_EN[key] ?? content[key] ?? "";
   }
@@ -153,15 +139,32 @@ export const CONTENT_FIELDS: {
   { key: "footer_text", label: "Texto do rodapé" },
 ];
 
-/** Campos que não são traduzíveis (imagens, timecode). */
 export const NON_TRANSLATABLE = new Set([
   "hero_image",
   "about_image",
   "hero_timecode",
 ]);
 
-/** Prefixo usado quando a imagem foi enviada para o armazenamento do projeto. */
 export const STORAGE_PREFIX = "storage:";
+export const IMAGE_FIELDS = new Set(["hero_image", "about_image"]);
+
+type SignedItem = {
+  error?: string | null;
+  path?: string | null;
+  signedUrl?: string;
+};
+
+function makeSignedUrlMap(items: SignedItem[] | null): Map<string, string> {
+  const map = new Map<string, string>();
+
+  for (const item of items ?? []) {
+    if (!item.error && item.path && item.signedUrl) {
+      map.set(item.path, item.signedUrl);
+    }
+  }
+
+  return map;
+}
 
 export async function fetchContent(): Promise<ContentMap> {
   const { data, error } = await supabase
@@ -183,65 +186,67 @@ export async function fetchContent(): Promise<ContentMap> {
     value.slice(STORAGE_PREFIX.length),
   );
 
-  const { data: signedImages, error: signError } = await supabase.storage
+  const { data: signedImages } = await supabase.storage
     .from("portfolio-videos")
     .createSignedUrls(paths, 3600);
 
-  if (signError || !signedImages) return map;
+  const signedByPath = makeSignedUrlMap(signedImages);
 
-  storageEntries.forEach(([key], index) => {
-    map[key] = signedImages[index]?.signedUrl ?? "";
-  });
+  for (const [key, value] of storageEntries) {
+    const path = value.slice(STORAGE_PREFIX.length);
+    map[key] = signedByPath.get(path) ?? "";
+  }
 
   return map;
 }
 
-export async function fetchVideos(): Promise<VideoRow[]> {
+export async function fetchRawVideos(): Promise<VideoRow[]> {
   const { data, error } = await supabase
     .from("videos")
     .select("*")
     .order("sort_order", { ascending: true });
 
   if (error) throw error;
+  return (data ?? []) as VideoRow[];
+}
 
-  const videos = (data ?? []) as VideoRow[];
+export async function fetchVideos(): Promise<VideoRow[]> {
+  const videos = await fetchRawVideos();
 
-  // Antes: até 2 requisições extras por vídeo (thumbnail + vídeo).
-  // Agora: todas as URLs assinadas são geradas em UMA única requisição.
-  const paths = Array.from(
+  const thumbPaths = Array.from(
     new Set(
-      videos.flatMap((video) =>
-        [video.thumb_path, video.video_path].filter(
-          (path): path is string => Boolean(path),
-        ),
-      ),
+      videos
+        .map((video) => video.thumb_path)
+        .filter((path): path is string => Boolean(path)),
     ),
   );
 
-  if (paths.length === 0) return videos;
+  if (thumbPaths.length === 0) return videos;
 
-  const { data: signedFiles, error: signError } = await supabase.storage
+  const { data: signedThumbs } = await supabase.storage
     .from("portfolio-videos")
-    .createSignedUrls(paths, 3600);
+    .createSignedUrls(thumbPaths, 3600);
 
-  if (signError || !signedFiles) return videos;
-
-  const urlByPath = new Map<string, string>();
-
-  paths.forEach((path, index) => {
-    const signedUrl = signedFiles[index]?.signedUrl;
-    if (signedUrl) urlByPath.set(path, signedUrl);
-  });
+  const signedByPath = makeSignedUrlMap(signedThumbs);
 
   return videos.map((video) => ({
     ...video,
-    video_url:
-      (video.video_path && urlByPath.get(video.video_path)) ||
-      video.video_url,
     thumb_url:
-      (video.thumb_path && urlByPath.get(video.thumb_path)) ||
-      video.thumb_url,
+      (video.thumb_path && signedByPath.get(video.thumb_path)) ||
+      video.thumb_url ||
+      "",
   }));
+}
+
+export async function fetchVideoPlaybackUrl(video: VideoRow): Promise<string> {
+  if (!video.video_path) return video.video_url || "";
+
+  const { data, error } = await supabase.storage
+    .from("portfolio-videos")
+    .createSignedUrl(video.video_path, 3600);
+
+  if (error) throw error;
+  return data?.signedUrl ?? "";
 }
 
 export async function fetchContacts(): Promise<ContactRow[]> {
@@ -251,14 +256,9 @@ export async function fetchContacts(): Promise<ContactRow[]> {
     .order("sort_order", { ascending: true });
 
   if (error) throw error;
-
   return (data ?? []) as ContactRow[];
 }
 
-/** Campos de conteúdo que são imagens. */
-export const IMAGE_FIELDS = new Set(["hero_image", "about_image"]);
-
-/** Conteúdo sem resolver imagens (para edição no painel). */
 export async function fetchRawContent(): Promise<ContentMap> {
   const { data, error } = await supabase
     .from("site_content")
@@ -267,7 +267,6 @@ export async function fetchRawContent(): Promise<ContentMap> {
   if (error) throw error;
 
   const map: ContentMap = { ...DEFAULT_CONTENT };
-
   for (const row of data ?? []) map[row.key] = row.value;
 
   return map;
