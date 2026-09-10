@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { PortfolioPage } from "@/components/PortfolioPage";
+import { PortfolioPage } from "@/components/ui/PortfolioPage";
 
 export const Route = createFileRoute("/en")({
   head: () => ({
